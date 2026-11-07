@@ -111,7 +111,7 @@ export default function Settings({ open, onClose }) {
           )}
         </section>
 
-        <p className="mono-s mute">Body, Mantra, Open · works offline once loaded · add it to your home screen from the share menu</p>
+        <p className="mono-s mute">Integrate · works offline once loaded · add it to your home screen from the share menu</p>
       </div>
     </Sheet>
   );

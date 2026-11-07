@@ -5,7 +5,7 @@ import { planWeek } from '../lib/backup.js';
 import { Mala, Spark, Icon, toast } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 
-export default function Today({ onBegin, onSettings }) {
+export default function Today({ onBegin, onSettings, onBuddy }) {
   const s = useStore();
   const today = localDate();
   const t = s.today?.date === today ? s.today : {};
@@ -18,9 +18,10 @@ export default function Today({ onBegin, onSettings }) {
   const plan = s.plan || DEFAULT_PLAN;
   const wk = planWeek();
   const inDefault = !s.plan && wk && wk <= 8;
+  const planDone = plan.to && today > plan.to;
   const d = new Date();
 
-  const eyebrowR = inDefault ? `WK ${String(wk).padStart(2, '0')}/08` : (plan.title || '').toUpperCase();
+  const eyebrowR = planDone ? 'PLAN FINISHED' : inDefault ? `WK ${String(wk).padStart(2, '0')}/08` : (plan.title || '').toUpperCase();
 
   return (
     <main className="screen">
@@ -28,6 +29,14 @@ export default function Today({ onBegin, onSettings }) {
         <p className="mono caps" style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={plan.title}>{d.toLocaleDateString('en-AU', { weekday: 'short' })} {String(d.getDate()).padStart(2, '0')}.{String(d.getMonth() + 1).padStart(2, '0')}.{String(d.getFullYear()).slice(2)} — {eyebrowR}</p>
         <button type="button" className="btn icon-btn" onClick={onSettings} aria-label="Settings"><Icon.gear /></button>
       </header>
+
+      {planDone && (
+        <section className="card card-lime stack" style={{ border: '2px solid var(--ink)' }} aria-labelledby="doneH">
+          <p className="mono-s caps">{plan.title} · finished {new Date(plan.to + 'T12:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</p>
+          <h2 id="doneH" style={{ fontWeight: 700, fontSize: '1.125rem', lineHeight: 1.25 }}>Time to decide what to keep. Your buddy can look back over it with you and draft what comes next.</h2>
+          <button type="button" className="btn btn-ink" onClick={() => onBuddy('My plan has finished. Look back over how it went and help me decide what to keep for the next stretch.')}>Review it with my buddy</button>
+        </section>
+      )}
 
       {!todays.length && (
         <section className="stack" style={{ gap: 8 }} aria-labelledby="feelH">
@@ -41,17 +50,17 @@ export default function Today({ onBegin, onSettings }) {
         </section>
       )}
 
-      <section className="hero" aria-label={`Today's sit: Body, ${body.name}, 3 minutes. Mantra, 14 minutes. Open, 3 minutes.`}>
-        <div className="blk" aria-hidden="true" style={{ left: 92, top: 92, width: 'min(258px, calc(100% - 92px))', height: 84, background: 'var(--block1)' }} />
-        <div className="blk" aria-hidden="true" style={{ left: 0, top: 200, width: 132, height: 74, background: 'var(--block3)' }} />
-        <button type="button" className="w word" style={{ left: 0, top: 0 }} onClick={() => setPicker(true)} aria-label={`Body: ${body.name}. Change the body practice`}>body</button>
-        <p className="note mono-s" style={{ left: 'min(226px, 60%)', top: 8, width: 'min(132px, calc(100% - min(226px, 60%)))' }} aria-hidden="true">03 MIN — SOMATIC<br />{body.name.toLowerCase()}<br /><span style={{ textDecoration: 'underline' }}>tap body to change</span></p>
-        <p className="w word deep" style={{ left: 70, top: 92 }} aria-hidden="true">mantra</p>
-        <p className="note mono-s" style={{ left: 0, top: 116, width: 64 }} aria-hidden="true">14 MIN<br />your<br />vedic<br />mantra</p>
-        <p className="w word" style={{ left: 22, top: 186 }} aria-hidden="true">open</p>
-        <p className="note mono-s" style={{ left: 'min(228px, 62%)', top: 214, width: 'min(120px, calc(100% - min(228px, 62%)))' }} aria-hidden="true">03 MIN<br />whole body,<br />sound, the room,<br />the living world</p>
-        <Spark size={22} style={{ left: 196, top: 196 }} />
-        <Spark size={14} style={{ right: 6, top: 70 }} />
+      <section className="hero" aria-label={`Today's sit: Connect, ${body.name}, 3 minutes. Dive, your mantra, 14 minutes. Integrate, 3 minutes.`}>
+        <div className="blk" aria-hidden="true" style={{ left: 'calc(var(--u) * 1.5)', top: 'calc(var(--u) * 0.97)', right: 0, height: 'calc(var(--u) * 0.84)', background: 'var(--block1)' }} />
+        <div className="blk" aria-hidden="true" style={{ left: 0, top: 'calc(var(--u) * 2.02)', width: 'calc(var(--u) * 2.2)', height: 'calc(var(--u) * 0.74)', background: 'var(--block3)' }} />
+        <button type="button" className="w word" style={{ left: 0, top: 0 }} onClick={() => setPicker(true)} aria-label={`Connect: ${body.name}. Change the somatic practice`}>connect</button>
+        <button type="button" className="note mono-s" style={{ right: 0, top: 'calc(var(--u) * 0.1)', width: 'calc(100% - var(--u) * 3.15)', textAlign: 'left' }} onClick={() => setPicker(true)} tabIndex={-1} aria-hidden="true">03 MIN<br /><span style={{ textDecoration: 'underline', textUnderlineOffset: 2 }}>{body.name.toLowerCase()}</span></button>
+        <p className="w word deep" style={{ left: 'calc(var(--u) * 1.72)', top: 'calc(var(--u) * 0.94)' }} aria-hidden="true">dive</p>
+        <p className="note mono-s" style={{ left: 0, top: 'calc(var(--u) * 1.06)', width: 'calc(var(--u) * 1.4)' }} aria-hidden="true">14 MIN<br />your<br />vedic<br />mantra</p>
+        <p className="w word" style={{ left: 0, top: 'calc(var(--u) * 1.88)' }} aria-hidden="true">integrate</p>
+        <p className="note mono-s" style={{ left: 'calc(var(--u) * 2.4)', top: 'calc(var(--u) * 2.8)', right: 0 }} aria-hidden="true">03 MIN — whole body, sound, the room, the living world</p>
+        <Spark size={22} style={{ left: 'calc(var(--u) * 3.55)', top: 'calc(var(--u) * 1.02)' }} />
+        <Spark size={14} style={{ right: 4, top: 'calc(var(--u) * 1.86)' }} />
       </section>
 
       <div className="stack" style={{ gap: 12 }}>
@@ -73,7 +82,7 @@ export default function Today({ onBegin, onSettings }) {
         <button type="button" className="link-btn" onClick={() => setPause(true)}>When to pause</button>
       </div>
 
-      <Sheet open={picker} onClose={() => setPicker(false)} title="body" kicker="Today's somatic practice · 3 min">
+      <Sheet open={picker} onClose={() => setPicker(false)} title="connect" kicker="Today's somatic practice · 3 min">
         <div className="list">
           {BODY_OPTIONS.map((o, i) => (
             <button key={o.id} type="button" className="item" aria-pressed={bodyId === o.id}

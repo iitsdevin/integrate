@@ -1,4 +1,4 @@
-// The daily sit: Body (a somatic practice), Mantra, Open.
+// The daily sit: Connect (a somatic practice), Dive (the mantra), Integrate (open awareness).
 
 export const MANTRA = 'Settle for 30 seconds, then your Vedic mantra. Eyes closed, no effort.';
 export const OPEN = 'Let the mantra go and keep your eyes closed. Feel your whole body at once. Let in sound, the room and the living world outside. Dedicate the practice to all beings.';
@@ -21,16 +21,16 @@ export const bodyOption = (id) => BODY_OPTIONS.find((o) => o.id === id) || BODY_
 export function dailySit(bodyId) {
   const b = bodyOption(bodyId);
   return {
-    kind: 'daily', label: 'Body, Mantra, Open',
+    kind: 'daily', label: 'Connect, Dive, Integrate',
     phases: [
-      { label: 'Body', min: 3, name: b.name, text: b.text, body: b.id },
-      { label: 'Mantra', min: 14, text: MANTRA },
-      { label: 'Open', min: 3, text: OPEN },
+      { label: 'Connect', min: 3, name: b.name, text: b.text, body: b.id },
+      { label: 'Dive', min: 14, text: MANTRA },
+      { label: 'Integrate', min: 3, text: OPEN },
     ],
   };
 }
 export const badDay = () => ({ kind: 'bad', label: 'Bad day sit', phases: [{ label: 'Bad day', min: 3, text: 'Feel your feet, sit with the mantra for a few rounds, stop. That counts.' }] });
-export const secondSit = () => ({ kind: 'second', label: 'Second sit', phases: [{ label: 'Mantra', min: 10, text: MANTRA }, { label: 'Rest', min: 2, text: 'Eyes closed. Stay a moment before you get up.' }] });
+export const secondSit = () => ({ kind: 'second', label: 'Second sit', phases: [{ label: 'Dive', min: 10, text: MANTRA }, { label: 'Rest', min: 2, text: 'Eyes closed. Stay a moment before you get up.' }] });
 export const timedPractice = (name, min, text) => ({ kind: 'practice', label: name, phases: [{ label: name, min, text: text || 'Stay with the practice. The bell will tell you when the time is up.' }] });
 
 export function kriyaSit(day) {
@@ -45,7 +45,7 @@ export function kriyaSit(day) {
 
 export const FEELS = [['wired', 'Wired'], ['flat', 'Flat'], ['foggy', 'Foggy'], ['okay', 'Okay']];
 export const FEEL_TEXT = {
-  wired: 'Body is now slow walking or long exhales. Drop your shoulders and take one breath, then begin. If this is panic, don’t sit through it: use Samurai Breath and RAIN in Regulation.',
+  wired: 'Connect is now slow walking or long exhales. Drop your shoulders and take one breath, then begin. If this is panic, don’t sit through it: use Samurai Breath and RAIN in Regulation.',
   flat: 'Run H.A.L.T. first: are you hungry, angry, lonely or tired? Deal with that, then sit. If the sit feels too big, 3 minutes counts.',
   foggy: 'Try Five Senses first: check in with what you can see, hear, smell, taste and touch. Then begin.',
   okay: "Nothing to change. Begin when you're ready.",
@@ -55,9 +55,9 @@ export const FEEL_TEXT = {
 export const PLAN_START = '2026-11-05';
 export const DEFAULT_PLAN = {
   id: 'eight-week', title: '8-week plan', from: '2026-11-05', to: '2026-12-30', weeks: 8,
-  summary: 'Body, Mantra, Open daily. Walk once. A second sit if you can.',
+  summary: 'Connect, Dive, Integrate daily. Walk once. A second sit if you can.',
   items: [
-    { label: 'Daily', text: 'Body, Mantra, Open — 20 minutes.' },
+    { label: 'Daily', text: 'Connect, Dive, Integrate — 20 minutes.' },
     { label: 'Second sit', text: '10 minutes of mantra and 2 of rest, mid-afternoon or before dinner, if you can.' },
     { label: 'Weekly', text: "One 20-minute walking meditation outside, Thich Nhat Hanh's style." },
     { label: 'Rules', text: 'No streaks; if you miss days, just come back. Start nothing new until 31 December. Your personal mantra stays in your sit.' },

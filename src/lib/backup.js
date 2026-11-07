@@ -9,10 +9,10 @@ export function exportJson() {
 
 export async function shareOrDownload() {
   const text = exportJson();
-  const name = `body-mantra-open-${localDate()}.json`;
+  const name = `integrate-backup-${localDate()}.json`;
   const file = typeof File === 'function' ? new File([text], name, { type: 'application/json' }) : null;
   if (file && navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Body, Mantra, Open backup' }); return 'shared'; }
+    try { await navigator.share({ files: [file], title: 'Integrate backup' }); return 'shared'; }
     catch (e) { if (e?.name === 'AbortError') return 'cancelled'; }
   }
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
@@ -29,7 +29,7 @@ function fromArtifact(raw) {
   const sits = [], journal = [];
   for (const sit of Object.values(raw.days || {}).flatMap((d) => d.sits || [])) {
     const id = uid();
-    sits.push({ id, at: sit.at, kind: sit.kind, label: sit.label, minutes: sit.minutes || 0, done: !!sit.done, rough: !!sit.rough, feel: sit.feel || null, bodyName: sit.ground ? 'Feet, Weight, Earth' : sit.wired ? 'Slow walking or long exhales' : null });
+    sits.push({ id, at: sit.at, kind: sit.kind, label: sit.label === 'Body, Mantra, Open' ? 'Connect, Dive, Integrate' : sit.label, minutes: sit.minutes || 0, done: !!sit.done, rough: !!sit.rough, feel: sit.feel || null, bodyName: sit.ground ? 'Feet, Weight, Earth' : sit.wired ? 'Slow walking or long exhales' : null });
     if (sit.note) journal.push({ id: uid(), at: sit.at, kind: 'sit', sitId: id, text: sit.note });
   }
   const checkins = {};
@@ -49,7 +49,7 @@ export function importText(text) {
   let inc;
   if (raw?.format === 'bmo-artifact-v1' || raw?.days) inc = fromArtifact(raw);
   else if (raw?.format === 'bmo2' && raw.data) inc = raw.data;
-  else throw new Error("That doesn't look like a Body, Mantra, Open backup.");
+  else throw new Error("That doesn't look like an Integrate backup.");
 
   const s = getState();
   const haveSit = new Set(s.sits.map((x) => x.at));

@@ -3,6 +3,6 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/body-mantra-open/',
+  base: process.env.BASE || '/integrate/',
   build: { target: 'es2022', chunkSizeWarningLimit: 1500 },
 });

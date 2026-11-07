@@ -1,6 +1,6 @@
-# Body, Mantra, Open
+# Integrate
 
-A daily sit in three phases — **Body** (a 3-minute somatic practice), **Mantra**, **Open** — with a toolkit of practices by lineage, a journal, and a reflection buddy.
+A daily sit in three phases — **Connect** (a 3-minute somatic practice), **Dive** (the mantra), **Integrate** (open, whole-body awareness) — with a toolkit of practices by lineage, a journal, and a reflection buddy.
 
 - **Today** — the sit, the 108-bead mala, a feeling check-in.
 - **Toolkit** — Regulation, Somatic, Zen, Kundalini, The Broad Place, Imaginal, Vajrayana, Earth & kin, and *Your library*: add PDFs or EPUBs you own and ask them questions.

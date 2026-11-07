@@ -269,7 +269,7 @@ export const CATEGORIES = [
       {
         title: 'Practices',
         items: [
-          p({ name: 'Start with the talks', who: 'Rob Burbea', summary: 'His Soulmaking Dharma retreats, recorded and free.', intro: 'The talks are hosted by the Hermes Amāra Foundation and on Dharma Seed. Your plan puts them around months 5–6, after the Open phase has deepened.', link: { label: 'Hermes Amāra Foundation', url: 'https://hermesamara.org' } }),
+          p({ name: 'Start with the talks', who: 'Rob Burbea', summary: 'His Soulmaking Dharma retreats, recorded and free.', intro: 'The talks are hosted by the Hermes Amāra Foundation and on Dharma Seed. Your plan puts them around months 5–6, after the Integrate phase has deepened.', link: { label: 'Hermes Amāra Foundation', url: 'https://hermesamara.org' } }),
           p({ name: 'Ways of looking', who: 'Rob Burbea', summary: 'How we look shapes what appears.', intro: 'Pick something that is here today, such as a mood or a tension. Look at it one way, as a problem to solve, and notice what that does. Then look at it as an image, as something with its own life. Notice what changes in you as the way of looking changes.' }),
           p({ name: 'Dwell with an image', mins: '10 min', timer: 10, summary: 'Let an image come from a feeling, and stay with it.', intro: 'Settle in the body first. Find a feeling with some charge. Let an image arise from it without choosing one. Stay with the image rather than interpreting it, and let it change if it wants to. End by noticing how the body feels now.' }),
           p({ name: 'Your Imaginal app', summary: 'Your own companion for working through the teachings.', intro: 'Keep the deep work there. This tab is a doorway, not a second home for it.' }),
@@ -295,13 +295,13 @@ export const CATEGORIES = [
           g('Tonglen'),
           g('Metta / Lovingkindness'),
           g('Seven Homecomings', { who: 'Lama Rod Owens' }),
-          p({ name: 'Find a teacher', summary: 'The next step, one at a time.', steps: ["Months 3–4: deepen the Open phase with Blackstone's The Fullness of the Ground or Lama Willa's The Wakeful Body.", "Months 5–6: start Rob Burbea's imaginal talks.", 'After that: find a Vajrayana teacher, and ask them about deity practice.'] }),
+          p({ name: 'Find a teacher', summary: 'The next step, one at a time.', steps: ["Months 3–4: deepen the Integrate phase with Blackstone's The Fullness of the Ground or Lama Willa's The Wakeful Body.", "Months 5–6: start Rob Burbea's imaginal talks.", 'After that: find a Vajrayana teacher, and ask them about deity practice.'] }),
         ],
       },
     ],
     readings: [
       b('wakeful-body'),
-      r({ title: 'The Fullness of the Ground', author: 'Judith Blackstone', seed: 'Realization as a felt, embodied openness. For deepening the Open phase.' }),
+      r({ title: 'The Fullness of the Ground', author: 'Judith Blackstone', seed: 'Realization as a felt, embodied openness. For deepening the Integrate phase.' }),
       b('new-saints'),
     ],
   },

@@ -93,7 +93,7 @@ export default function App() {
 
   return (
     <div className="app">
-      {route.tab === 'today' && <Today onBegin={begin} onSettings={() => setSettingsOpen(true)} />}
+      {route.tab === 'today' && <Today onBegin={begin} onSettings={() => setSettingsOpen(true)} onBuddy={(starter) => setBuddy({ open: true, starter })} />}
       {route.tab === 'toolkit' && route.view === 'library' && (
         <Library onBack={() => go('toolkit')} focusBook={askBook} onSettings={() => setSettingsOpen(true)} />
       )}

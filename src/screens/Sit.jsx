@@ -120,7 +120,7 @@ export default function Sit({ active: initial, bell, onEnd }) {
         </div>
         <div className="sit-mid">
           <div style={{ position: 'relative' }}>
-            <h2 className="word sit-name" aria-live="polite">{p.label.toLowerCase()}</h2>
+            <h2 className="word sit-name" aria-live="polite" style={{ '--fit': (1.1 / (0.41 * Math.max(4, p.label.length))).toFixed(3) }}>{p.label.toLowerCase()}</h2>
             <Spark size={24} color="var(--sit-accent)" style={{ right: 8, top: -18 }} />
           </div>
           {p.name && <p className="mono caps" style={{ color: 'var(--sit-ink)' }}>{p.name}</p>}
@@ -132,8 +132,8 @@ export default function Sit({ active: initial, bell, onEnd }) {
           {needBell && (
             <button type="button" className="btn btn-block" onClick={() => { unlockAudio(); ring(bell, 1); setNeedBell(false); }}>Turn the bells back on</button>
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: (!active.rough && /mantra/i.test(p.label)) ? '1fr 1fr' : '1fr', gap: 10 }}>
-            {!active.rough && /mantra/i.test(p.label) && <button type="button" className="btn" onClick={rough}>Rough sit? Rest</button>}
+          <div style={{ display: 'grid', gridTemplateColumns: (!active.rough && /mantra|dive/i.test(p.label)) ? '1fr 1fr' : '1fr', gap: 10 }}>
+            {!active.rough && /mantra|dive/i.test(p.label) && <button type="button" className="btn" onClick={rough}>Rough sit? Rest</button>}
             <button type="button" className="btn" onClick={() => { if (stopArmed) finish(false); else setStopArmed(true); }}>
               {stopArmed ? 'Tap again to stop' : 'Stop'}
             </button>

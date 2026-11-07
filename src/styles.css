@@ -126,8 +126,8 @@ h1, h2, h3 { margin: 0; font-weight: 800; }
 .notice { padding: 12px 14px; border: 2px solid var(--ink); background: var(--raised); font-size: 0.9375rem; line-height: 1.45; }
 
 /* ---------- today ---------- */
-.hero { position: relative; height: 296px; }
-.hero .w { position: absolute; margin: 0; font-size: 6.1rem; }
+.hero { --u: min(6rem, calc((min(100vw, 32rem) - 40px) / 4)); position: relative; height: calc(var(--u) * 2.8 + 30px); font-size: var(--u); }
+.hero .w { position: absolute; margin: 0; font-size: 1em; }
 .hero .note { position: absolute; width: 132px; }
 .hero .blk { position: absolute; }
 .hero button.w { text-align: left; color: inherit; transition: transform 140ms var(--ease-out); transform-origin: left center; }
@@ -266,7 +266,7 @@ textarea.field { min-height: 140px; resize: vertical; }
 .sit-strip > div { position: relative; border: 1px solid var(--sit-ink); overflow: hidden; }
 .sit-strip .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--sit-word); }
 .sit-mid { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px; min-height: 360px; overflow: hidden; }
-.sit-name { color: var(--sit-word); font-size: clamp(6rem, 40vw, 11rem); white-space: nowrap; margin-left: -4px; }
+.sit-name { color: var(--sit-word); font-size: min(11rem, 40vw, calc((min(100vw, 30rem) - 40px) * var(--fit, 0.6))); white-space: nowrap; margin-left: -4px; }
 .sit-text { max-width: 26rem; color: var(--sit-mute); font-family: var(--mono); font-size: 0.875rem; line-height: 1.55; }
 .sit-clock { font-size: clamp(5rem, 28vw, 7rem); font-variant-numeric: tabular-nums; }
 .sit .btn { border-color: var(--sit-ink); color: var(--sit-ink); }

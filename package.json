@@ -1,5 +1,5 @@
 {
-  "name": "body-mantra-open",
+  "name": "integrate",
   "version": "1.0.0",
   "scripts": {
     "dev": "vite --host",

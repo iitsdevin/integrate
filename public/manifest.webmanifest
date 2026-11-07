@@ -1,7 +1,7 @@
 {
-  "name": "Body, Mantra, Open",
-  "short_name": "Body, Mantra, Open",
-  "description": "A daily sit: body, mantra, open.",
+  "name": "Integrate",
+  "short_name": "Integrate",
+  "description": "A daily sit: connect, dive, integrate.",
   "id": "./",
   "start_url": "./#today",
   "scope": "./",
