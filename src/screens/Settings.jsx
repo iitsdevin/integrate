@@ -4,12 +4,13 @@ import { toast } from '../components/bits.jsx';
 import { useStore, updateSettings, getApiKey, setApiKey, DEFAULT_SETTINGS, lastSaveFailed } from '../lib/store.js';
 import { SCHEMES, resolveDark } from '../lib/theme.js';
 import { SOUNDS, unlockAudio, ring, preloadBells } from '../lib/bells.js';
-import { shareOrDownload, importText } from '../lib/backup.js';
+import { shareOrDownload, importText, daysSinceBackup } from '../lib/backup.js';
 import { storageEstimate, askPersist } from '../lib/library.js';
 
 export default function Settings({ open, onClose }) {
   const settings = useStore((s) => s.settings);
   const sitsCount = useStore((s) => s.sits.length);
+  const lastBackup = useStore((s) => daysSinceBackup(s));
   const [key, setKey] = useState('');
   const [hasKey, setHasKey] = useState(!!getApiKey());
   const [paste, setPaste] = useState('');
@@ -91,7 +92,8 @@ export default function Settings({ open, onClose }) {
         <section className="stack" aria-labelledby="backupH">
           <h3 id="backupH" className="mono caps">Your data</h3>
           <p className="soft" style={{ fontSize: '0.875rem' }}>{sitsCount.toLocaleString('en-AU')} {sitsCount === 1 ? 'sit' : 'sits'}. Everything lives in this browser on this phone, so back it up now and then. Backups leave out your API key and your books.</p>
-          <button type="button" className="btn btn-ink" onClick={async () => { const r = await shareOrDownload(); if (r !== 'cancelled') toast(r === 'shared' ? 'Backup shared' : 'Backup downloaded'); }}>Export a backup</button>
+          <button type="button" className="btn btn-ink" onClick={async () => { const r = await shareOrDownload(); if (r !== 'cancelled') toast(r === 'shared' ? 'Backed up' : 'Backup downloaded'); }}>Export a backup</button>
+          <p className="mono-s mute">{lastBackup === null ? 'No backup yet.' : lastBackup === 0 ? 'Last backup: today.' : `Last backup: ${lastBackup} day${lastBackup === 1 ? '' : 's'} ago.`} On iPhone, choose Save to Files in the share sheet. A reminder shows on Today every three weeks.</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <button type="button" className="btn" onClick={() => fileRef.current?.click()}>Import a file</button>
             <button type="button" className="btn" onClick={() => setImportOpen((x) => !x)} aria-expanded={importOpen}>Paste text</button>

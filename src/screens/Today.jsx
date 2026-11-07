@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStore, setToday, updateSettings, localDate, timeOf, addSit } from '../lib/store.js';
 import { BODY_OPTIONS, bodyOption, dailySit, badDay, secondSit, FEELS, FEEL_TEXT, WHEN_TO_PAUSE, DEFAULT_PLAN } from '../data/daily.js';
-import { planWeek } from '../lib/backup.js';
+import { planWeek, backupDue, daysSinceBackup, shareOrDownload, snoozeBackup } from '../lib/backup.js';
 import { Mala, Spark, Icon, toast } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 
@@ -29,6 +29,18 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
         <p className="mono caps" style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={plan.title}>{d.toLocaleDateString('en-AU', { weekday: 'short' })} {String(d.getDate()).padStart(2, '0')}.{String(d.getMonth() + 1).padStart(2, '0')}.{String(d.getFullYear()).slice(2)} — {eyebrowR}</p>
         <button type="button" className="btn icon-btn" onClick={onSettings} aria-label="Settings"><Icon.gear /></button>
       </header>
+
+      {backupDue(s) && (
+        <section className="card stack" style={{ boxShadow: '4px 4px 0 var(--block1)' }} aria-labelledby="bkH">
+          <p className="mono-s caps">{daysSinceBackup(s) === null ? 'No backup yet' : `Last backup ${daysSinceBackup(s)} days ago`}</p>
+          <h2 id="bkH" style={{ fontWeight: 700, fontSize: '1.0625rem', lineHeight: 1.3 }}>Back up your practice. Everything lives only on this phone.</h2>
+          <p className="soft" style={{ fontSize: '0.875rem' }}>Opens the share sheet. Tap <b>Save to Files</b>, then pick iCloud Drive or Google Drive.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
+            <button type="button" className="btn btn-ink" onClick={async () => { const r = await shareOrDownload(); if (r !== 'cancelled') toast('Backed up. Next reminder in three weeks.'); }}>Back up now</button>
+            <button type="button" className="btn" onClick={() => { snoozeBackup(7); toast('I’ll remind you next week.'); }}>Later</button>
+          </div>
+        </section>
+      )}
 
       {planDone && (
         <section className="card card-lime stack" style={{ border: '2px solid var(--ink)' }} aria-labelledby="doneH">

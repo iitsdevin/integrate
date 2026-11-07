@@ -12,15 +12,28 @@ export async function shareOrDownload() {
   const name = `integrate-backup-${localDate()}.json`;
   const file = typeof File === 'function' ? new File([text], name, { type: 'application/json' }) : null;
   if (file && navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Integrate backup' }); return 'shared'; }
+    try { await navigator.share({ files: [file], title: 'Integrate backup' }); markBackedUp(); return 'shared'; }
     catch (e) { if (e?.name === 'AbortError') return 'cancelled'; }
   }
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
+  markBackedUp();
   return 'downloaded';
 }
+
+// Backup reminder: due when there's something to lose and the last backup is 3+ weeks old (or never).
+const DAY = 864e5;
+export function markBackedUp() { setState((s) => ({ ...s, backup: { ...(s.backup || {}), lastAt: new Date().toISOString(), snoozeUntil: null } })); }
+export function snoozeBackup(days = 7) { setState((s) => ({ ...s, backup: { ...(s.backup || {}), snoozeUntil: new Date(Date.now() + days * DAY).toISOString() } })); }
+export function backupDue(s) {
+  if (!s.sits.length && !s.journal.length) return false;
+  const b = s.backup || {};
+  if (b.snoozeUntil && new Date(b.snoozeUntil) > new Date()) return false;
+  return !b.lastAt || Date.now() - new Date(b.lastAt) > 21 * DAY;
+}
+export function daysSinceBackup(s) { return s.backup?.lastAt ? Math.floor((Date.now() - new Date(s.backup.lastAt)) / DAY) : null; }
 
 const MOODS = { forest: ['moss'], dawn: ['apricot'], clay: ['apricot'], dusk: ['cobalt'], ink: ['paper', 'dark'] };
 
@@ -64,6 +77,7 @@ export function importText(text) {
     checkins: { ...(inc.checkins || {}), ...s.checkins },
     checks: { ...(inc.checks || {}), ...s.checks },
     plan: s.plan || inc.plan || null,
+    backup: s.backup || null,
     course: Object.fromEntries(['done', 'stepdown', 'values', 'bullseye', 'sheets', 'practiced', 'quiz'].map((k) => [k, { ...(inc.course?.[k] || {}), ...(s.course?.[k] || {}) }])),
     settings: { ...s.settings, ...(inc.settings || {}) },
     buddy: { sessions: [...s.buddy.sessions, ...((inc.buddy?.sessions) || []).filter((x) => !s.buddy.sessions.some((y) => y.id === x.id))] },
