@@ -1,0 +1,18 @@
+{
+  "name": "Body, Mantra, Open",
+  "short_name": "Body, Mantra, Open",
+  "description": "A daily sit: body, mantra, open.",
+  "id": "./",
+  "start_url": "./#today",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F3EFE4",
+  "theme_color": "#F3EFE4",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/unalome.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>Body, Mantra, Open</title>
+    <meta name="description" content="A daily sit: body, mantra, open. With a toolkit, a journal and a reflection buddy." />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F3EFE4" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15140E" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Body, Mantra, Open" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./icons/unalome.svg" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <script>
+      // Set the scheme before first paint so there is no flash of the wrong colours.
+      (function () {
+        try {
+          var s = JSON.parse(localStorage.getItem('bmo2') || '{}').settings || {};
+          var dark = s.mode === 'dark' || (s.mode !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.dataset.scheme = s.scheme || 'paper';
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        } catch (e) { document.documentElement.dataset.scheme = 'paper'; }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <div id="root"></div>
+    <div id="glow" aria-hidden="true" hidden></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
