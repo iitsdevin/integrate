@@ -5,9 +5,12 @@ import { kriyaSit, timedPractice } from '../data/daily.js';
 import { listBooks, onLibraryChange } from '../lib/library.js';
 import { Spark, Icon, PracticeBody } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
+import Course from './Course.jsx';
+import { COURSE } from '../data/course.js';
 
 export default function Toolkit({ view, onView, onBegin, onAskBook }) {
   if (view === 'library') return null; // rendered by Library.jsx
+  if (view === COURSE.id) return <Course onBack={() => onView(null)} onBegin={onBegin} />;
   const cat = view && findCategory(view);
   if (cat) return <Category cat={cat} onBack={() => onView(null)} onBegin={onBegin} onAskBook={onAskBook} />;
   return <Grid onView={onView} />;
@@ -15,6 +18,8 @@ export default function Toolkit({ view, onView, onBegin, onAskBook }) {
 
 function Grid({ onView }) {
   const [books, setBooks] = useState([]);
+  const done = useStore((s) => s.course?.done) || {};
+  const doneCount = COURSE.lessons.filter((l) => done[l.id]).length;
   useEffect(() => { const load = () => listBooks().then(setBooks).catch(() => {}); load(); return onLibraryChange(load); }, []);
   const left = [CATEGORIES[0], CATEGORIES[2], CATEGORIES[4], CATEGORIES[6]];
   const right = [CATEGORIES[1], CATEGORIES[3], CATEGORIES[5], CATEGORIES[7]];
@@ -38,9 +43,17 @@ function Grid({ onView }) {
         <div className="col">{left.map((c, i) => tile(c, i, 0))}</div>
         <div className="col">{right.map((c, i) => tile(c, i, 1))}</div>
       </nav>
+      <button type="button" className="tile lime" style={{ minHeight: 0, flexDirection: 'row', alignItems: 'center' }} onClick={() => onView(COURSE.id)}>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span className="mono-s caps">09 — course · {doneCount ? `${doneCount} of ${COURSE.lessons.length} done` : `${COURSE.lessons.length} short lessons`}</span>
+          <b style={{ marginTop: 4 }}>ACT for ADHD</b>
+          <span className="h mono-s">noticing, unhooking, values and the tiny first step</span>
+        </span>
+        <Icon.arrow />
+      </button>
       <button type="button" className="tile lib" onClick={() => onView('library')}>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span className="mono-s caps">09 — ask your books</span>
+          <span className="mono-s caps">10 — ask your books</span>
           <b style={{ marginTop: 4 }}>Your library</b>
           <span className="h mono-s">{books.length ? `${books.length} book${books.length > 1 ? 's' : ''} on this phone` : 'add PDFs or EPUBs you own, then ask them questions'}</span>
         </span>

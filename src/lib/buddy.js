@@ -4,6 +4,7 @@ import { getState, getApiKey, localDate, dayDiff } from './store.js';
 import { allPractices, allReadings } from '../data/content.js';
 import { DEFAULT_PLAN } from '../data/daily.js';
 import { searchLibrary, listBooks } from './library.js';
+import { COURSE } from '../data/course.js';
 
 const API = 'https://api.anthropic.com/v1/messages';
 
@@ -59,6 +60,7 @@ function systemPrompt() {
     `Today is ${new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}. They are in Perth, Western Australia.`,
     `Current plan: ${plan.title} (${plan.from} to ${plan.to}). ${plan.summary}`,
     `Sits in the last 14 days: ${recent}. Total sits recorded: ${s.sits.length}.`,
+    `They are doing a short course in the Toolkit, "ACT for ADHD" (lessons: ${COURSE.lessons.map((l) => l.no + ' ' + l.title).join('; ')}). Done so far: ${COURSE.lessons.filter((l) => s.course?.done?.[l.id]).map((l) => l.title).join(', ') || 'none'}. Their written answers are journal entries starting "ACT for ADHD". You can link what they bring to a lesson when it genuinely helps, using the course's language (away and towards moves, hooks, values, unhooking, making room, the tiny first step, dropping anchor). Never turn ADHD struggles into a willpower problem.`,
     s.settings.aboutMe ? `\nWhat they've told the app about themselves:\n${s.settings.aboutMe}` : '',
   ].join('\n');
 }
@@ -106,7 +108,8 @@ async function runTool(name, input) {
         .map((x) => ({ name: x.name, category: x.category, who: x.who, length: x.mins, summary: x.summary }));
       const readings = allReadings().filter((x) => hit([x.title, x.author, x.seed, x.category].join(' '))).slice(0, 8)
         .map((x) => ({ title: x.title, author: x.author, category: x.category, idea: x.seed, practice: x.practice }));
-      return { practices, readings };
+      const lessons = COURSE.lessons.filter((l) => hit([l.title, l.short, ...l.idea, l.try.title, l.week].join(' '))).map((l) => ({ lesson: l.no + ' ' + l.title, about: l.short, practice: l.try.title, thisWeek: l.week }));
+      return { practices, readings, actForAdhdLessons: lessons };
     }
     case 'list_library_books': {
       const books = await listBooks();
