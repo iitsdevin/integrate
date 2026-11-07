@@ -64,7 +64,7 @@ export function importText(text) {
     checkins: { ...(inc.checkins || {}), ...s.checkins },
     checks: { ...(inc.checks || {}), ...s.checks },
     plan: s.plan || inc.plan || null,
-    course: { done: { ...(inc.course?.done || {}), ...(s.course?.done || {}) }, stepdown: { ...(inc.course?.stepdown || {}), ...(s.course?.stepdown || {}) } },
+    course: Object.fromEntries(['done', 'stepdown', 'values', 'bullseye', 'sheets', 'practiced', 'quiz'].map((k) => [k, { ...(inc.course?.[k] || {}), ...(s.course?.[k] || {}) }])),
     settings: { ...s.settings, ...(inc.settings || {}) },
     buddy: { sessions: [...s.buddy.sessions, ...((inc.buddy?.sessions) || []).filter((x) => !s.buddy.sessions.some((y) => y.id === x.id))] },
   });

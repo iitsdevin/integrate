@@ -45,9 +45,9 @@ function Grid({ onView }) {
       </nav>
       <button type="button" className="tile lime" style={{ minHeight: 0, flexDirection: 'row', alignItems: 'center' }} onClick={() => onView(COURSE.id)}>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span className="mono-s caps">09 — course · {doneCount ? `${doneCount} of ${COURSE.lessons.length} done` : `${COURSE.lessons.length} short lessons`}</span>
+          <span className="mono-s caps">09 — course · {doneCount ? `${doneCount} of ${COURSE.lessons.length} done` : `7 modules · ${COURSE.lessons.length} short lessons`}</span>
           <b style={{ marginTop: 4 }}>ACT for ADHD</b>
-          <span className="h mono-s">noticing, unhooking, values and the tiny first step</span>
+          <span className="h mono-s">guided exercises, metaphors, worksheets and tools for the six ACT skills</span>
         </span>
         <Icon.arrow />
       </button>
@@ -81,7 +81,7 @@ function Category({ cat, onBack, onBegin, onAskBook }) {
     <main className="screen">
       <button type="button" className="link-btn" style={{ alignSelf: 'flex-start', marginTop: -8 }} onClick={onBack}><Icon.back /> Toolkit</button>
       <header style={{ position: 'relative', minHeight: 100 }}>
-        <div aria-hidden="true" style={{ position: 'absolute', left: 64, top: 28, width: 'min(190px, 55%)', height: 64, background: cat.tile === 'lavender' ? 'var(--block1)' : 'var(--block2)' }} />
+        <div aria-hidden="true" style={{ position: 'absolute', left: 64, top: 28, width: 'min(190px, 55%)', height: 64, background: cat.tile === 'lavender' ? 'var(--block1)' : 'var(--block3)' }} />
         <h1 className="word" style={{ position: 'relative', fontSize: cat.name.length > 10 ? '4.2rem' : '6.4rem', overflowWrap: 'anywhere' }}>{cat.name.toLowerCase()}</h1>
         <p className="mono-s caps" style={{ position: 'relative', marginTop: 8 }}>{cat.no} — {cat.blurb}</p>
       </header>
