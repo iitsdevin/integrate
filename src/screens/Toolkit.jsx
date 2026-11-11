@@ -7,10 +7,13 @@ import { Spark, Icon, PracticeBody } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 import Course from './Course.jsx';
 import { COURSE } from '../data/course.js';
+import Workbook from './Workbook.jsx';
+import { WORKBOOK } from '../data/workbook.js';
 
 export default function Toolkit({ view, onView, onBegin, onAskBook }) {
   if (view === 'library') return null; // rendered by Library.jsx
   if (view === COURSE.id) return <Course onBack={() => onView(null)} onBegin={onBegin} />;
+  if (view === WORKBOOK.id) return <Workbook onBack={() => onView(null)} />;
   const cat = view && findCategory(view);
   if (cat) return <Category cat={cat} onBack={() => onView(null)} onBegin={onBegin} onAskBook={onAskBook} />;
   return <Grid onView={onView} />;
@@ -20,6 +23,8 @@ function Grid({ onView }) {
   const [books, setBooks] = useState([]);
   const done = useStore((s) => s.course?.done) || {};
   const doneCount = COURSE.lessons.filter((l) => done[l.id]).length;
+  const wbDone = useStore((s) => s.wb?.done) || {};
+  const wbCount = WORKBOOK.lessons.filter((l) => wbDone[l.id]).length;
   useEffect(() => { const load = () => listBooks().then(setBooks).catch(() => {}); load(); return onLibraryChange(load); }, []);
   const left = [CATEGORIES[0], CATEGORIES[2], CATEGORIES[4], CATEGORIES[6]];
   const right = [CATEGORIES[1], CATEGORIES[3], CATEGORIES[5], CATEGORIES[7]];
@@ -51,9 +56,17 @@ function Grid({ onView }) {
         </span>
         <Icon.arrow />
       </button>
+      <button type="button" className="tile lavender" style={{ minHeight: 0, flexDirection: 'row', alignItems: 'center' }} onClick={() => onView(WORKBOOK.id)}>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span className="mono-s caps">10 — workbook · {wbCount ? `${wbCount} of ${WORKBOOK.lessons.length} done` : `10 modules · ${WORKBOOK.lessons.length} lessons`}</span>
+          <b style={{ marginTop: 4 }}>Neurodivergence skills</b>
+          <span className="h mono-s">kemp and mitchelson's workbook for autism and adhd, every exercise interactive</span>
+        </span>
+        <Icon.arrow />
+      </button>
       <button type="button" className="tile lib" onClick={() => onView('library')}>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span className="mono-s caps">10 — ask your books</span>
+          <span className="mono-s caps">11 — ask your books</span>
           <b style={{ marginTop: 4 }}>Your library</b>
           <span className="h mono-s">{books.length ? `${books.length} book${books.length > 1 ? 's' : ''} on this phone` : 'add PDFs or EPUBs you own, then ask them questions'}</span>
         </span>

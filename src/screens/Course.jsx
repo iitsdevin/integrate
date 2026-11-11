@@ -170,7 +170,7 @@ export default function Course({ onBack }) {
   );
 }
 
-function Progress({ items, done, label }) {
+export function Progress({ items, done, label }) {
   return (
     <section className="stack" style={{ gap: 6 }} aria-label="Progress">
       <p className="mono caps">{label}</p>

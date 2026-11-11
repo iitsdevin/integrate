@@ -79,6 +79,7 @@ export function importText(text) {
     plan: s.plan || inc.plan || null,
     backup: s.backup || null,
     course: Object.fromEntries(['done', 'stepdown', 'values', 'bullseye', 'sheets', 'practiced', 'quiz'].map((k) => [k, { ...(inc.course?.[k] || {}), ...(s.course?.[k] || {}) }])),
+    wb: (() => { const a = inc.wb || {}, b = s.wb || {}; const ans = { ...(a.ans || {}) }; for (const [l, v] of Object.entries(b.ans || {})) ans[l] = { ...(ans[l] || {}), ...v }; return { done: { ...(a.done || {}), ...(b.done || {}) }, practiced: { ...(a.practiced || {}), ...(b.practiced || {}) }, saved: { ...(a.saved || {}), ...(b.saved || {}) }, ans }; })(),
     settings: { ...s.settings, ...(inc.settings || {}) },
     buddy: { sessions: [...s.buddy.sessions, ...((inc.buddy?.sessions) || []).filter((x) => !s.buddy.sessions.some((y) => y.id === x.id))] },
   });

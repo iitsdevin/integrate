@@ -25,6 +25,7 @@ const empty = () => ({
   buddy: { sessions: [] },
   today: null, // { date, feel, body }
   course: { done: {}, stepdown: {} },
+  wb: { done: {}, ans: {}, practiced: {} },
 });
 
 function safeGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
