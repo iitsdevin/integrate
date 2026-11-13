@@ -6,6 +6,7 @@ import Sheet from '../components/Sheet.jsx';
 import { Player } from '../components/CourseTools.jsx';
 import { wbState, setWb, markDone, WorkbookItems, answersText, hasAnswers } from '../components/WorkbookTools.jsx';
 import { Progress } from './Course.jsx';
+import { Figure } from '../components/WorkbookFigures.jsx';
 
 const KIND = { learn: 'Read', practice: 'Guided', exercise: 'Exercise' };
 const TILE = ['plain', 'lavender', 'plain', 'lime', 'lavender', 'plain', 'ink', 'lavender', 'plain', 'lime'];
@@ -180,6 +181,7 @@ function Lesson({ lesson, wb, onPlay, onNext }) {
   return (
     <div className="stack" style={{ gap: 20 }} data-lesson={lesson.id}>
       {lesson.body && <div className="prose">{lesson.body.map((p, i) => <p key={i}>{p}</p>)}</div>}
+      {lesson.fig && <Figure id={lesson.fig} />}
       {lesson.help && <HelpCard />}
 
       {lesson.steps && (

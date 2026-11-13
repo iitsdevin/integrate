@@ -345,3 +345,13 @@ textarea.field { min-height: 140px; resize: vertical; }
 .wb-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .wb-add .field { padding: 10px 12px; }
 .wb-rowcard { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 2px solid var(--ink); background: var(--raised); }
+
+/* workbook figures */
+.fig { margin: 0; padding: 12px 10px 10px; border: 2px solid var(--ink); background: var(--raised); box-shadow: 4px 4px 0 var(--block1); display: flex; flex-direction: column; gap: 8px; }
+.fig svg { display: block; width: 100%; height: auto; overflow: visible; }
+.fig figcaption { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.02em; line-height: 1.45; color: var(--soft); padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); }
+.fig-drift { animation: fig-drift 14s ease-in-out infinite alternate; }
+.fig-drift-2 { animation-duration: 19s; animation-delay: -6s; }
+.fig-drift-3 { animation-duration: 23s; animation-delay: -11s; }
+@keyframes fig-drift { from { transform: translateX(-6px); } to { transform: translateX(10px); } }
+@media (prefers-reduced-motion: reduce) { .fig-drift { animation: none; } }

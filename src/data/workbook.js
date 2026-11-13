@@ -94,13 +94,13 @@ export const MODULES = [
     id: 'know', no: '01', name: 'Know yourself', skill: 'Your spiky profile', pages: '8-29',
     intro: "A kinder and more accurate map of how your brain works. Six areas where neurodivergent people process the world differently, and the strengths that come with them.",
     lessons: [
-      L({ id: 'wb-six', title: 'A spiky profile', short: 'Six differences, not a list of faults', pg: '8-9', mins: 3,
+      L({ id: 'wb-six', fig: 'spiky', title: 'A spiky profile', short: 'Six differences, not a list of faults', pg: '8-9', mins: 3,
         body: [
           "Being neurodivergent is complicated. Most of us have a spiky profile. Some things come easily, even brilliantly. Others are far harder than anyone expects, and the world rarely makes room for that.",
           "The criteria used to diagnose Autism and ADHD were built mostly from studies of white boys. People who learned to hide their differences, or who don't match that picture, often got missed. That includes many women, trans and nonbinary people, First Nations people and people of colour.",
           "The book looks at six areas where our brains tend to work differently: interests, executive functioning, the senses, emotions, social expectations and communication. This module walks through each one. Notice what rings true, and skip what doesn't.",
         ] }),
-      L({ id: 'wb-interests', title: 'Spins and hyperfocus', short: 'A life organised around interests', pg: '9-11',
+      L({ id: 'wb-interests', fig: 'beams', title: 'Spins and hyperfocus', short: 'A life organised around interests', pg: '9-11',
         body: [
           "For most of us, life organises itself around interests. Something either grabs us completely or barely registers.",
           "Many Autistic people have a monotropic attention style: a narrow, deep beam that stays on a few big interests, sometimes for a lifetime. The community calls these spins. Being dragged out of one can feel physically painful.",
@@ -112,7 +112,7 @@ export const MODULES = [
           text('fixes', 'Interests that burned bright and faded'),
           text('judged', 'Interests or collections people have called weird or a waste of time', "And what you'd say back now, if you like"),
         ] }),
-      L({ id: 'wb-ef', title: 'Executive functioning', short: "Your brain's management team", pg: '11-16', mins: 7,
+      L({ id: 'wb-ef', fig: 'exec', title: 'Executive functioning', short: "Your brain's management team", pg: '11-16', mins: 7,
         body: [
           "Executive functions are your brain's management team. They get you started and help you switch. They plan, hold information in mind and keep track of time. They put the brakes on urges, check how you're going and help you adapt when plans change. Regulating emotions is one of their jobs too.",
           "These get overloaded easily, especially for ADHDers. Plenty of us cover the gaps for years with clever systems, last-minute adrenaline and a lot of anxiety. Then life gets bigger and the patches stop holding. It was never a character flaw.",
@@ -133,7 +133,7 @@ export const MODULES = [
           list('cost', 'Three long-term ways this has cost me', 3),
           text('media', 'Memes or videos that nailed it for me', 'Try searching "executive dysfunction" on TikTok or YouTube'),
         ] }),
-      L({ id: 'wb-senses', title: "When it's too much", short: 'Sensory sensitivities', pg: '16-17',
+      L({ id: 'wb-senses', fig: 'senses', title: "When it's too much", short: 'Sensory sensitivities', pg: '16-17',
         body: [
           "At least nine in ten Autistic people, and most ADHDers, process sensory information differently. You might be more sensitive to some things and less to others. That mix is your sensory profile.",
           "When something is too intense, it can leave you upset or overwhelmed. Avoiding it makes complete sense. That's called sensory avoidance.",
@@ -163,7 +163,7 @@ export const MODULES = [
           freq('coord', 'How often do I have trouble with coordination or balance?'),
           scales('intero', 'How strongly I feel these', 'Barely', 'Very strongly', ['Heartbeat', 'Breathing', 'Hunger', 'Thirst', 'Feeling full', 'Heat', 'Cold', 'Pain', 'Nausea', 'Itch', 'Needing the toilet', 'Tickle', 'Emotions', 'Tiredness']),
         ] }),
-      L({ id: 'wb-emotions', title: 'Emotions', short: 'Noticing, naming, settling', pg: '20-23', help: true,
+      L({ id: 'wb-emotions', fig: 'emoskills', title: 'Emotions', short: 'Noticing, naming, settling', pg: '20-23', help: true,
         body: [
           "Handling an emotion takes three skills: noticing the sensations in your body, working out which emotion it is, and settling it. Difficulty with the first two is called alexithymia.",
           "Some people barely feel the signals. They seem calm, then suddenly they're furious or in pieces, and nobody saw it coming, including them. Others feel huge surges but can't tell what they mean, which is frightening. They might work it out hours later, with logic.",
@@ -192,7 +192,7 @@ export const MODULES = [
           ]),
           text('clash', 'A time my way of doing things clashed with the expected rules', 'What happened, and which rules was I following?'),
         ] }),
-      L({ id: 'wb-talk', title: 'How you communicate', short: 'The double empathy problem', pg: '25-26',
+      L({ id: 'wb-talk', fig: 'empathy', title: 'How you communicate', short: 'The double empathy problem', pg: '25-26',
         body: [
           "For years people assumed neurodivergent people were bad at communicating. Research now shows two neurodivergent people understand each other about as well as two neurotypical people do. The breakdowns happen between the two styles. It's called the double empathy problem, and it means the work belongs to both sides.",
           "For each pair, tap the one that sounds more like you. Tap both if both fit.",
@@ -276,7 +276,7 @@ export const MODULES = [
           line('over', 'A challenge I can get through is…'),
           text('could', 'What might change if I spoke to myself like this more often'),
         ] }),
-      L({ id: 'wb-systems', title: 'Threat, drive and soothing', short: 'Three old systems in a modern world', pg: '38-40',
+      L({ id: 'wb-systems', fig: 'systems', title: 'Threat, drive and soothing', short: 'Three old systems in a modern world', pg: '38-40',
         body: [
           "Your brain still runs three ancient systems. The threat system keeps you safe with instant reactions: fight, flight, freeze, flop or fawn. It can't tell a real danger from a memory or a worry, so it fires at all of them.",
           "The drive system sends you after goals and resources. It feels good, and it can tip into constant striving.",
@@ -311,7 +311,7 @@ export const MODULES = [
           scale('rsd', 'How intensely I feel rejection', 'It passes quickly', 'It floors me'),
           text('recent', 'A recent moment it showed up'),
         ] }),
-      L({ id: 'wb-masking', title: 'Hiding: masking', short: 'Suppressing, camouflaging, compensating', pg: '40-42',
+      L({ id: 'wb-masking', fig: 'masking', title: 'Hiding: masking', short: 'Suppressing, camouflaging, compensating', pg: '40-42',
         body: [
           "Masking means hiding your differences to fit in. It comes in three main forms.",
           "Suppressing is keeping things under wraps: your opinions, your needs, your stims, your enthusiasm, your laugh. Camouflaging is copying other people or playing a more likeable role. Compensating is working hard to cover differences: forcing eye contact, rationing how much you talk, putting on expressions, acting interested.",
@@ -359,7 +359,7 @@ export const MODULES = [
     id: 'burnout', no: '03', name: 'Burnout', skill: 'From burnout to living well', pages: '52-81',
     intro: "Burnout touches almost every neurodivergent adult the authors work with. Learn to spot it early and recover kindly. Do this one soon, because it makes everything else easier.",
     lessons: [
-      L({ id: 'wb-burnout', title: 'Am I in burnout?', short: 'The signs, past and present', pg: '52-56', mins: 6, help: true,
+      L({ id: 'wb-burnout', fig: 'cycle', title: 'Am I in burnout?', short: 'The signs, past and present', pg: '52-56', mins: 6, help: true,
         body: [
           "Neurodivergent burnout isn't the same as the work kind. It hits everything at once. Your senses get louder, people get harder, tasks feel impossible, your interests go flat and your health slides. It can last months, and it often gets mistaken for depression.",
           "Tick anything you've ever felt. Tap again to add a star if it's happened in the last week.",
@@ -560,7 +560,7 @@ export const MODULES = [
           chips('mine', 'What overwhelm looks like for me', ['Meltdowns', 'Partial shutdowns', 'Full shutdowns', 'Going nonverbal', 'Crying', 'Shouting', 'Needing to escape']),
           check('habits', 'Coping habits I have had', ['Skin-picking', 'Hair-pulling', 'Nail or cheek biting', 'Binge eating', 'Drinking', 'Other substances', 'Gambling', 'Compulsive shopping', 'Self-harm'], { star: 'happening now' }),
         ] }),
-      L({ id: 'wb-prima', title: 'PRIMA: five steps', short: 'Pause, Regulate, Identify, Meaning, Allow', pg: '93', mins: 2,
+      L({ id: 'wb-prima', fig: 'prima', title: 'PRIMA: five steps', short: 'Pause, Regulate, Identify, Meaning, Allow', pg: '93', mins: 2,
         body: [
           "The book offers a five-step approach for big emotions. PRIMA means first in Italian.",
           'Pause. Give yourself a beat before you respond.',
@@ -642,7 +642,7 @@ export const MODULES = [
           ['follow', 'Do I want to follow that urge? Will it help?', ''],
           ['do', 'What will I do?', 'e.g. one kind message, then a walk'],
         ], { repeat: true })] }),
-      L({ id: 'wb-weather', title: 'Weather in the sky', short: 'Allow: let feelings come and go', pg: '105-106', mins: 5, stepSecs: 25, needs: ['overwhelmed'],
+      L({ id: 'wb-weather', fig: 'weather', title: 'Weather in the sky', short: 'Allow: let feelings come and go', pg: '105-106', mins: 5, stepSecs: 25, needs: ['overwhelmed'],
         body: ["Allow. This imagining helps you let emotions come and go. If picturing things is hard, read the steps aloud, or draw it instead."],
         steps: [
           'Settle into a comfortable position. Take a few long, slow breaths.',
@@ -712,7 +712,7 @@ export const MODULES = [
           text('drop', 'One standard I could lower, and what good enough would look like'),
           text('mine', "A priority that's truly mine, not borrowed"),
         ] }),
-      L({ id: 'wb-spoons', title: 'Spoons and shortcuts', short: 'Simplify, use tech, get help', pg: '114-117', mins: 6,
+      L({ id: 'wb-spoons', fig: 'spoons', title: 'Spoons and shortcuts', short: 'Simplify, use tech, get help', pg: '114-117', mins: 6,
         body: [
           "Spoon theory pictures your daily energy as a handful of spoons. Every task costs some. When they're gone, you're done until you rest. Saving spoons is a kind thing to do for yourself.",
           "Simplify and group tasks. Put the thing you forget on top of the thing you never forget. Pair a new habit with an old one. Make a drop zone by the door. Let technology carry some of the load: alarms, one calendar for everything, timers, voice reminders. AI can break a big job into steps, sort priorities or plan meals around your needs. Your reflection buddy in this app can help with that.",
@@ -728,7 +728,7 @@ export const MODULES = [
           freq('ask', 'How often do I ask for help?'),
           text('who', 'Who I could ask, and for what'),
         ] }),
-      L({ id: 'wb-nice', title: 'Make it NICE', short: 'Novel, Interesting, Challenging, Emergency', pg: '118-119', mins: 5, needs: ['stuck'],
+      L({ id: 'wb-nice', fig: 'nice', title: 'Make it NICE', short: 'Novel, Interesting, Challenging, Emergency', pg: '118-119', mins: 5, needs: ['stuck'],
         body: [
           "Neurodivergent brains run on interest. We're drawn to things that are Novel, Interesting, Challenging or an Emergency. The book calls this NICE. When a task has none of those, your brain can slam the shutters down. Then the only way through is to let it become an emergency.",
           "Better to add some NICE on purpose. Turn it into a problem to solve, a race against the clock or a game with points. Set yourself a deadline. Make it beautiful or symmetrical. Theme it around a favourite film.",
@@ -874,7 +874,7 @@ export const MODULES = [
           rows('meet', 'Ways to meet people through my interests', [['what', 'Interest or group', 'e.g. a board game night'], ['where', 'In person or online, and where', 'e.g. the café near work, Thursdays']]),
           check('support', "Help I'd need to make it happen", ['Finding the information', 'Getting organised to go', 'Making phone calls', 'Knowing what to expect', 'Someone to come along the first few times', "Support while I'm there", 'Transport']),
         ] }),
-      L({ id: 'wb-strawberry', title: 'Your strawberry people', short: 'Choose a few and put them first', pg: '144-146', mins: 5,
+      L({ id: 'wb-strawberry', fig: 'strawberry', title: 'Your strawberry people', short: 'Choose a few and put them first', pg: '144-146', mins: 5,
         body: [
           "Neurotypical people tend to rank friends without thinking about it: a couple of close ones at the centre, then circles going outwards. Many of us try to treat everyone the same, out of fairness. The trouble is that no friendship gets the chance to go deep.",
           "Devon Price, in Unmasking Autism, calls the special few his strawberry people. The idea is to pick a handful of people who get you and put real energy into them.",
@@ -1005,7 +1005,7 @@ export const MODULES = [
           blanks('regular', 'When I get regular time with them, I am…', 3, Q),
           text('more', 'New ways I could spend time with what lights me up'),
         ] }),
-      L({ id: 'wb-observer', title: 'The you that notices', short: 'Meeting your observing self', pg: '166-167', mins: 5,
+      L({ id: 'wb-observer', fig: 'observer', title: 'The you that notices', short: 'Meeting your observing self', pg: '166-167', mins: 5,
         body: [
           "Underneath your changing thoughts and feelings, part of you is always noticing. ACT calls it the observing self. It's the steady centre of you, and it stays the same whatever you're going through.",
           "Find somewhere you can read out loud without feeling self-conscious.",
@@ -1155,7 +1155,7 @@ export const MODULES = [
           scale('aff', 'How affirming my work or study place is', 'Not at all', 'Very'),
           text('next', "What I could ask for to improve it, or whether it's time to leave"),
         ] }),
-      L({ id: 'wb-goals', title: 'Goals that fit', short: 'Small, positive, value-based', pg: '195-196', mins: 5,
+      L({ id: 'wb-goals', fig: 'steps', title: 'Goals that fit', short: 'Small, positive, value-based', pg: '195-196', mins: 5,
         body: [
           "Many of us set huge goals based on neurotypical ideals, fall short, and then stop setting goals at all. Helpful goals say what you want rather than what you don't. They're small and clear, connected to your values, achievable, and good for your life. They can grow over time.",
           "For example, \"stop being late\" becomes \"set a reminder to start getting ready 40 minutes before I leave\". \"Make friends\" becomes \"say yes to one invite this month\".",
@@ -1164,7 +1164,7 @@ export const MODULES = [
       L({ id: 'wb-action', title: 'Your action plan', short: 'A self-compassionate plan', pg: '197-198', mins: 10, share: true,
         body: ["Pull it all together. Name one thing you want for your life. Then set up to three small goals, the values behind each, and up to three small actions for each goal. If you need ideas for values, look back at your sweet spot and qualities in module 7."],
         items: [plan('plan')] }),
-      L({ id: 'wb-returns', title: 'Gentle returns', short: 'Getting back on track, again', pg: '198', mins: 2,
+      L({ id: 'wb-returns', fig: 'returns', title: 'Gentle returns', short: 'Getting back on track, again', pg: '198', mins: 2,
         body: ["Kelly Wilson, one of the founders of ACT, describes life as a series of gentle returns. You'll drift off track all the time. Everyone does. What counts is turning back toward what matters, again and again, without beating yourself up for drifting."],
         items: [text('return', 'What helps me find my way back')] }),
     ],

@@ -1,7 +1,7 @@
 // Offline support for Integrate.
 // Pages: network first, so updates arrive when online; the cached copy when offline.
 // Built assets have hashed names, so they are cached forever once fetched.
-const CACHE = 'integrate-v3';
+const CACHE = 'integrate-v4';
 const SHELL = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png', './icons/unalome.svg'];
 
 self.addEventListener('install', (e) => {
