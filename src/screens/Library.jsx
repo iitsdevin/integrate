@@ -57,7 +57,7 @@ export default function Library({ onBack, focusBook, onSettings }) {
 
   return (
     <main className="screen">
-      <button type="button" className="link-btn" style={{ alignSelf: 'flex-start', marginTop: -8 }} onClick={onBack}><Icon.back /> Toolkit</button>
+      <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={onBack}><Icon.back /> Toolkit</button>
       <header>
         <p className="mono caps">09 — kept on this phone, never uploaded</p>
         <h1 className="word" style={{ fontSize: 'clamp(4.4rem, 23vw, 6rem)', marginTop: 6 }}>library</h1>

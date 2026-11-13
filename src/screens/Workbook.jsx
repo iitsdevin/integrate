@@ -50,7 +50,7 @@ export default function Workbook({ onBack }) {
     const i = MODULES.indexOf(module), n = MODULES[i + 1];
     return (
       <main className="screen">
-        <button type="button" className="link-btn" style={{ alignSelf: 'flex-start', marginTop: -8 }} onClick={() => setMod(null)}><Icon.back /> The workbook</button>
+        <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setMod(null)}><Icon.back /> The workbook</button>
         <header className="stack" style={{ gap: 8 }}>
           <p className="mono caps">Module {module.no} · book pages {module.pages}</p>
           <h1 className="word" style={{ fontSize: 'clamp(3.2rem, 16vw, 4.4rem)', overflowWrap: 'anywhere' }}>{module.name.toLowerCase()}</h1>
@@ -76,7 +76,7 @@ export default function Workbook({ onBack }) {
 
   return (
     <main className="screen">
-      <button type="button" className="link-btn" style={{ alignSelf: 'flex-start', marginTop: -8 }} onClick={onBack}><Icon.back /> Toolkit</button>
+      <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={onBack}><Icon.back /> Toolkit</button>
       <header style={{ position: 'relative' }}>
         <p className="mono caps">10 — workbook · kemp &amp; mitchelson</p>
         <div style={{ position: 'relative', marginTop: 6 }}>
@@ -181,7 +181,7 @@ function Lesson({ lesson, wb, onPlay, onNext }) {
   return (
     <div className="stack" style={{ gap: 20 }} data-lesson={lesson.id}>
       {lesson.body && <div className="prose">{lesson.body.map((p, i) => <p key={i}>{p}</p>)}</div>}
-      {lesson.fig && <Figure id={lesson.fig} />}
+      {lesson.fig && !lesson.figAfter && <Figure id={lesson.fig} ans={wb.ans} />}
       {lesson.help && <HelpCard />}
 
       {lesson.steps && (
@@ -199,6 +199,7 @@ function Lesson({ lesson, wb, onPlay, onNext }) {
           <WorkbookItems lesson={lesson} wb={wb} />
         </section>
       )}
+      {lesson.fig && lesson.figAfter && <Figure id={lesson.fig} ans={wb.ans} />}
 
       {some && (
         <div style={{ display: 'grid', gridTemplateColumns: lesson.share ? '1fr 1fr' : '1fr', gap: 10 }}>

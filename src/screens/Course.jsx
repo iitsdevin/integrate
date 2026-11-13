@@ -49,7 +49,7 @@ export default function Course({ onBack }) {
     const mDone = module.lessons.filter((l) => done[l.id]).length;
     return (
       <main className="screen">
-        <button type="button" className="link-btn" style={{ alignSelf: 'flex-start', marginTop: -8 }} onClick={() => setMod(null)}><Icon.back /> ACT for ADHD</button>
+        <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setMod(null)}><Icon.back /> ACT for ADHD</button>
         <header className="stack" style={{ gap: 8 }}>
           <p className="mono caps">Module {module.no} · {module.skill}</p>
           <h1 className="word" style={{ fontSize: 'clamp(3.4rem, 17vw, 4.6rem)', overflowWrap: 'anywhere' }}>{module.name.toLowerCase()}</h1>
@@ -74,7 +74,7 @@ export default function Course({ onBack }) {
 
   return (
     <main className="screen">
-      <button type="button" className="link-btn" style={{ alignSelf: 'flex-start', marginTop: -8 }} onClick={onBack}><Icon.back /> Toolkit</button>
+      <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={onBack}><Icon.back /> Toolkit</button>
       <header style={{ position: 'relative' }}>
         <p className="mono caps">09 — course · {COURSE.tagline.toLowerCase()}</p>
         <div style={{ position: 'relative', marginTop: 6 }}>

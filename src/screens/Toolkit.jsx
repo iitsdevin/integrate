@@ -92,7 +92,7 @@ function Category({ cat, onBack, onBegin, onAskBook }) {
 
   return (
     <main className="screen">
-      <button type="button" className="link-btn" style={{ alignSelf: 'flex-start', marginTop: -8 }} onClick={onBack}><Icon.back /> Toolkit</button>
+      <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={onBack}><Icon.back /> Toolkit</button>
       <header style={{ position: 'relative', minHeight: 100 }}>
         <div aria-hidden="true" style={{ position: 'absolute', left: 64, top: 28, width: 'min(190px, 55%)', height: 64, background: cat.tile === 'lavender' ? 'var(--block1)' : 'var(--block3)' }} />
         <h1 className="word" style={{ position: 'relative', fontSize: cat.name.length > 10 ? '4.2rem' : '6.4rem', overflowWrap: 'anywhere' }}>{cat.name.toLowerCase()}</h1>

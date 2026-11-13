@@ -32,6 +32,11 @@ const prefix = (from, steps) => ({ t: 'prefix', from, steps });
 const show = (from, keys, label) => ({ t: 'show', from, keys, label });
 const rewrite = (k, label, rws) => ({ t: 'rewrite', k, label, rows: rws });
 const plan = (k) => ({ t: 'plan', k });
+const radial = (k, label, o) => ({ t: 'radial', k, label, ...o });
+const sensemap = (k, label, rws) => ({ t: 'sensemap', k, label, rows: rws });
+const windowMap = (k, label) => ({ t: 'window', k, label });
+const circles = (k, label, from) => ({ t: 'circles', k, label, from });
+const spoonday = (k, label) => ({ t: 'spoonday', k, label });
 
 export const FREQ = ['Never', 'Rarely', 'Sometimes', 'Often', 'Very often', 'Always'];
 const SENSES = (ex) => [['sight', 'Sight', ex[0]], ['sound', 'Hearing', ex[1]], ['touch', 'Touch', ex[2]], ['smell', 'Smell', ex[3]], ['taste', 'Taste', ex[4]]];
@@ -99,6 +104,15 @@ export const MODULES = [
           "Being neurodivergent is complicated. Most of us have a spiky profile. Some things come easily, even brilliantly. Others are far harder than anyone expects, and the world rarely makes room for that.",
           "The criteria used to diagnose Autism and ADHD were built mostly from studies of white boys. People who learned to hide their differences, or who don't match that picture, often got missed. That includes many women, trans and nonbinary people, First Nations people and people of colour.",
           "The book looks at six areas where our brains tend to work differently: interests, executive functioning, the senses, emotions, social expectations and communication. This module walks through each one. Notice what rings true, and skip what doesn't.",
+          "People often picture the spectrum as a line from mild to severe. Many Autistic people prefer to picture it as a wheel, as in Rebecca Burgess's comic about the spectrum. Each trait sits at its own point, and the shape is different for everyone. Map yours below, and come back to it after the module.",
+        ],
+        items: [
+          radial('spectrum', 'My spectrum wheel', {
+            hub: 'me', levels: 5,
+            cap: 'Tap a ring on each slice. Near the centre means close to typical for that trait. Near the edge means very different from typical, whether that shows up as a strength, a struggle or both.',
+            axes: [['Interests', 'Interests'], ['Executive function', 'Executive'], ['Senses', 'Senses'], ['Body signals', 'Body signals'], ['Emotions', 'Emotions'], ['Social rules', 'Social'], ['Communication', 'Talking'], ['Movement and coordination', 'Movement']],
+          }),
+          text('notice', 'What I notice about my shape'),
         ] }),
       L({ id: 'wb-interests', fig: 'beams', title: 'Spins and hyperfocus', short: 'A life organised around interests', pg: '9-11',
         body: [
@@ -133,12 +147,13 @@ export const MODULES = [
           list('cost', 'Three long-term ways this has cost me', 3),
           text('media', 'Memes or videos that nailed it for me', 'Try searching "executive dysfunction" on TikTok or YouTube'),
         ] }),
-      L({ id: 'wb-senses', fig: 'senses', title: "When it's too much", short: 'Sensory sensitivities', pg: '16-17',
+      L({ id: 'wb-senses', title: "When it's too much", short: 'Sensory sensitivities', pg: '16-17',
         body: [
           "At least nine in ten Autistic people, and most ADHDers, process sensory information differently. You might be more sensitive to some things and less to others. That mix is your sensory profile.",
-          "When something is too intense, it can leave you upset or overwhelmed. Avoiding it makes complete sense. That's called sensory avoidance.",
+          "When something is too intense, it can leave you upset or overwhelmed. Avoiding it makes complete sense. That's called sensory avoidance. When a sense is muted, you might go looking for more of it. That's sensory seeking, and the next lesson looks at it.",
         ],
         items: [
+          sensemap('map', 'My sensory profile', ['Sight', 'Hearing', 'Touch', 'Smell', 'Taste', 'Inside', 'Balance']),
           table('hyper', "What's too much for me", SENSES(['e.g. clutter, crowds, bright or flickering light', 'e.g. sirens, repetitive noise, certain music', 'e.g. hugs, clothing labels, tight shoes, sand', 'e.g. perfume, some food smells', 'e.g. strong flavours, certain textures'])),
           freq('freq', 'How often do I have distressing sensory experiences?'),
           text('avoid', 'Places, people or situations I avoid because of this'),
@@ -251,11 +266,29 @@ export const MODULES = [
       L({ id: 'wb-identity', title: 'All of who you are', short: 'Intersectionality', pg: '33-36',
         body: [
           "Your neurodivergence sits alongside everything else about you: gender, sexuality, culture, body, class, age, faith. Each one shapes how the world treats you. Some bring privilege and some bring extra hurdles, and they stack together in ways that are hard to see from outside. That's intersectionality.",
-          "This stays on your phone. Write only what you want to.",
+          "A well-known way to picture this is a wheel of power and privilege, based on a graphic by Sylvia Duckworth. Each slice is part of identity. The closer to the centre, the closer to the power our society hands out. The further out, the more you're pushed to the margins. Most people sit near the centre on some slices and near the edge on others.",
+          "This stays on your phone. Skip any slice you'd rather not mark, or that doesn't fit how you see yourself.",
         ],
         items: [
+          radial('wheel', 'Where I sit', {
+            hub: 'power', levels: 3,
+            cap: 'Tap a ring on each slice, or use the buttons below. The inner ring is closest to power and the outer ring is the margins. The shape shows where life has been easier for you and where it has been harder.',
+            axes: [
+              ['Neurotype', 'Neurotype', ['Neurotypical', 'ND, often unseen', 'ND, visible']],
+              ['Disability', 'Disability', ['None', 'Some', 'Significant']],
+              ['Mental health', 'Mind', ['Steady', 'Up and down', 'Struggling']],
+              ['Body', 'Body', ['Fits norms', 'In between', 'Outside norms']],
+              ['Gender', 'Gender', ['Cis man', 'Cis woman', 'Trans or nonbinary']],
+              ['Sexuality', 'Sexuality', ['Straight', 'Gay or lesbian', 'Bi, pan, ace, queer']],
+              ['Skin colour', 'Skin', ['White', 'Lighter', 'Darker']],
+              ['Citizenship', 'Citizenship', ['Citizen', 'Resident', 'Visa or none']],
+              ['English', 'English', ['First language', 'Second language', 'Still learning']],
+              ['Money', 'Money', ['Comfortable', 'Getting by', 'Struggling']],
+              ['Education', 'Education', ['Uni', 'School', 'Little formal']],
+              ['Where I live', 'Place', ['City', 'Regional', 'Remote']],
+            ],
+          }),
           text('ids', 'The parts of my identity that shape my life most', 'In your own words'),
-          scale('balance', 'Overall, my mix of identities has', 'given me relative privilege', 'made life harder'),
           text('how', 'How that mix has shaped my experience'),
         ] }),
       L({ id: 'wb-ableism', title: 'The critic you were handed', short: 'Internalised ableism', pg: '36-38', mins: 6,
@@ -276,7 +309,7 @@ export const MODULES = [
           line('over', 'A challenge I can get through is…'),
           text('could', 'What might change if I spoke to myself like this more often'),
         ] }),
-      L({ id: 'wb-systems', fig: 'systems', title: 'Threat, drive and soothing', short: 'Three old systems in a modern world', pg: '38-40',
+      L({ id: 'wb-systems', fig: 'systems', figAfter: true, title: 'Threat, drive and soothing', short: 'Three old systems in a modern world', pg: '38-40',
         body: [
           "Your brain still runs three ancient systems. The threat system keeps you safe with instant reactions: fight, flight, freeze, flop or fawn. It can't tell a real danger from a memory or a worry, so it fires at all of them.",
           "The drive system sends you after goals and resources. It feels good, and it can tip into constant striving.",
@@ -555,8 +588,10 @@ export const MODULES = [
         body: [
           "A meltdown is your nervous system boiling over. You might shout, cry, throw things or run, and feel wrecked for days afterwards. A shutdown comes from the same overload but goes inward. You go numb, lose your words and pull away. Neither one is a tantrum or a choice.",
           "When feelings get unbearable, many of us find habits that bring quick relief: picking skin, pulling hair, biting nails, bingeing, drinking, gambling, self-harm. They make sense as ways of coping. They also cost a lot. Seeing them clearly, without judgement, is the first step toward other options.",
+          "Dan Siegel's window of tolerance is a helpful picture here. Inside the window, you can feel things and still think. Above it, your system revs up into fight or flight, and a meltdown can follow. Below it, your system drops into shutdown. For many neurodivergent people the window is narrower, and sensory stress, masking and burnout shrink it further.",
         ],
         items: [
+          windowMap('wot', 'Where am I right now?'),
           chips('mine', 'What overwhelm looks like for me', ['Meltdowns', 'Partial shutdowns', 'Full shutdowns', 'Going nonverbal', 'Crying', 'Shouting', 'Needing to escape']),
           check('habits', 'Coping habits I have had', ['Skin-picking', 'Hair-pulling', 'Nail or cheek biting', 'Binge eating', 'Drinking', 'Other substances', 'Gambling', 'Compulsive shopping', 'Self-harm'], { star: 'happening now' }),
         ] }),
@@ -613,8 +648,8 @@ export const MODULES = [
           list('acts', "Up to six interest-based things that help when I'm upset", 6),
         ] }),
       L({ id: 'wb-identify', title: 'Name it', short: 'Identify: a bigger emotion vocabulary', pg: '98-101', mins: 4,
-        body: ["Identify. A bigger vocabulary helps you pin down what you feel. Start with the broad family, then look for the closer word. If you can't name it, start with the body sensation and work backwards."],
-        items: [chips('words', 'Words that often fit me', [], { groups: [
+        body: ["Identify. A bigger vocabulary helps you pin down what you feel. Start with the broad family, then look for the closer word. If you can't name it, start with the body sensation and work backwards.", "The wheel below works like Gloria Willcox's feelings wheel, which many therapists use: broad feelings in the middle, more precise words further out."],
+        items: [chips('words', 'Words that often fit me', [], { t: 'feelwheel', short: ['Happy', 'Curious', 'Afraid', 'Sad', 'Angry', 'Shame', 'Drained'], groups: [
           ['Happy, grateful, loving', ['Accepting', 'Affectionate', 'Amused', 'Calm', 'Content', 'Delighted', 'Grateful', 'Hopeful', 'Inspired', 'Joyful', 'Loving', 'Peaceful', 'Playful', 'Proud', 'Relaxed', 'Safe', 'Tender', 'Warm'], 'Often feels light, warm and loose in the chest'],
           ['Curious, energised, surprised', ['Brave', 'Confident', 'Curious', 'Determined', 'Energised', 'Excited', 'Fascinated', 'Interested', 'Intrigued', 'Shocked', 'Surprised'], 'Often feels buzzy or trembly'],
           ['Anxious, afraid', ['Afraid', 'Alarmed', 'Anxious', 'Confused', 'Doubtful', 'Helpless', 'Nervous', 'Overwhelmed', 'Panicked', 'Powerless', 'Scared', 'Tense', 'Trapped', 'Uneasy', 'Vulnerable', 'Worried'], 'Often feels restless, queasy, hot or tense'],
@@ -712,13 +747,14 @@ export const MODULES = [
           text('drop', 'One standard I could lower, and what good enough would look like'),
           text('mine', "A priority that's truly mine, not borrowed"),
         ] }),
-      L({ id: 'wb-spoons', fig: 'spoons', title: 'Spoons and shortcuts', short: 'Simplify, use tech, get help', pg: '114-117', mins: 6,
+      L({ id: 'wb-spoons', title: 'Spoons and shortcuts', short: 'Simplify, use tech, get help', pg: '114-117', mins: 6,
         body: [
           "Spoon theory pictures your daily energy as a handful of spoons. Every task costs some. When they're gone, you're done until you rest. Saving spoons is a kind thing to do for yourself.",
           "Simplify and group tasks. Put the thing you forget on top of the thing you never forget. Pair a new habit with an old one. Make a drop zone by the door. Let technology carry some of the load: alarms, one calendar for everything, timers, voice reminders. AI can break a big job into steps, sort priorities or plan meals around your needs. Your reflection buddy in this app can help with that.",
           "And stop doing everything yourself. Ask people you trust for small things first. If you can afford it or get funding, paid help feels less personal and takes rejection out of the picture.",
         ],
         items: [
+          spoonday('today', "Today's spoons"),
           freq('out', "How often do I feel like I've run out of spoons?"),
           check('try', "Shortcuts I'll try", [
             ['Simplify', ['Put what I forget with what I never forget', 'Link two tasks together', 'Pair a new habit with an old one', 'A drop zone by the front door']],
@@ -882,6 +918,7 @@ export const MODULES = [
         items: [
           head('Step 1. Find people who get you'),
           list('names', 'Up to four people I feel at ease with, outside close family', 4),
+          circles('rings', 'Place them, and anyone else, in your circles', 'names'),
           head('Step 2. Create a cue'),
           one('emoji', 'Pick an emoji and add it to their names in your contacts. Use the same one for each person, so their messages stand out.', ['🍓', '🌱', '⭐', '🫶', '🐧', '🌙', '🍀', '🔥', '💛', '🦋']),
           head('Step 3. Put them first'),

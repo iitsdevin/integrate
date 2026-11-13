@@ -80,7 +80,7 @@ h1, h2, h3 { margin: 0; font-weight: 800; }
 .app { position: relative; z-index: 1; min-height: 100dvh; }
 .screen {
   max-width: 32rem; margin: 0 auto;
-  padding: calc(env(safe-area-inset-top, 0px) + 18px) var(--gutter-r) calc(var(--tabbar) + 32px) var(--gutter);
+  padding: calc(env(safe-area-inset-top, 0px) + 30px) var(--gutter-r) calc(var(--tabbar) + 32px) var(--gutter);
   display: flex; flex-direction: column; gap: 20px;
 }
 .row { display: flex; align-items: center; gap: 10px; }
@@ -355,3 +355,8 @@ textarea.field { min-height: 140px; resize: vertical; }
 .fig-drift-3 { animation-duration: 23s; animation-delay: -11s; }
 @keyframes fig-drift { from { transform: translateX(-6px); } to { transform: translateX(10px); } }
 @media (prefers-reduced-motion: reduce) { .fig-drift { animation: none; } }
+.seg.wb-seg-sm button { min-height: 40px; padding: 4px 4px; font-size: 0.625rem; line-height: 1.2; text-transform: none; letter-spacing: 0.01em; white-space: normal; overflow-wrap: anywhere; }
+.wb-details summary { cursor: pointer; padding: 6px 0; list-style: none; }
+.wb-details summary::-webkit-details-marker { display: none; }
+.wb-details summary::before { content: '+ '; }
+.wb-details[open] summary::before { content: '− '; }

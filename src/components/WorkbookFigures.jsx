@@ -146,18 +146,21 @@ function DoubleEmpathy() {
   );
 }
 
-function ThreeSystems() {
+function ThreeSystems({ ans }) {
+  const v = ans?.['wb-systems']?.sys || {};
+  const k = ['Threat: on guard, anxious, defensive', 'Drive: striving, wanting, chasing', 'Soothing: rested, safe, connected'];
+  const r = (i) => (v[k[i]] == null ? 58 : 46 + v[k[i]] * 1.5);
   return (
     <>
-      <circle cx={96} cy={160} r={58} fill={C.b2} stroke={C.ink} strokeWidth={SW} />
-      <circle cx={204} cy={160} r={58} fill={C.b1} stroke={C.ink} strokeWidth={SW} />
-      <circle cx={150} cy={66} r={58} fill={C.ink} stroke={C.ink} strokeWidth={SW} />
+      <circle cx={96} cy={160} r={r(1)} fill={C.b2} stroke={C.ink} strokeWidth={SW} style={{ transition: 'r 300ms var(--ease-out)' }} />
+      <circle cx={204} cy={160} r={r(2)} fill={C.b1} stroke={C.ink} strokeWidth={SW} style={{ transition: 'r 300ms var(--ease-out)' }} />
+      <circle cx={150} cy={66} r={r(0)} fill={C.ink} stroke={C.ink} strokeWidth={SW} style={{ transition: 'r 300ms var(--ease-out)' }} />
       <T x={150} y={64} disp s={26} f={C.g}>threat</T>
       <T x={150} y={82} mono s={9.5} f={C.g}>protect</T>
       <T x={88} y={164} disp s={26} f={C.t2}>drive</T>
       <T x={88} y={182} mono s={9.5} f={C.t2}>want, chase</T>
-      <T x={212} y={164} disp s={26}>soothing</T>
-      <T x={212} y={182} mono s={9.5}>rest, connect</T>
+      <T x={212} y={164} disp s={v[k[2]] != null && v[k[2]] < 5 ? 21 : 26}>soothing</T>
+      <T x={212} y={182} mono s={v[k[2]] != null && v[k[2]] < 5 ? 8.5 : 9.5}>rest, connect</T>
     </>
   );
 }
@@ -361,16 +364,16 @@ export const FIGS = {
   steps: { h: 148, draw: Steps, alt: 'Four rising steps toward a flag: one text, one coffee, one group, go again. The flag marks the broad goal, feel less alone.', cap: 'A broad goal is reached by small, kind steps.' },
 };
 
-export function Figure({ id }) {
+export function Figure({ id, ans }) {
   const f = FIGS[id];
   if (!f) return null;
   const D = f.draw;
   return (
     <figure className="fig">
       <svg viewBox={`0 0 300 ${f.h}`} role="img" aria-label={f.alt}>
-        <D />
+        <D ans={ans} />
       </svg>
-      <figcaption>{f.cap}</figcaption>
+      <figcaption>{id === 'systems' && ans?.['wb-systems']?.sys ? 'Your three systems, sized by your ratings above. Years of rejection keep threat loud. This work grows soothing.' : f.cap}</figcaption>
     </figure>
   );
 }

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { getState, setState, addEntry } from '../lib/store.js';
 import { FREQ } from '../data/workbook.js';
 import { toast } from './bits.jsx';
+import { RadialMap, SenseMap, WindowMap, FeelWheel, Circles, SpoonDay } from './WorkbookMaps.jsx';
 
 export const wbState = (s = getState()) => ({ done: {}, ans: {}, practiced: {}, ...(s.wb || {}) });
 export const setWb = (fn) => setState((s) => ({ ...s, wb: fn(wbState(s)) }));
@@ -156,6 +157,12 @@ function Item({ b, lid, all }) {
     }
     case 'rewrite': return <Rewrite b={b} v={v} set={set} />;
     case 'plan': return <Plan v={v} set={set} />;
+    case 'radial': return <RadialMap b={b} v={v} set={set} />;
+    case 'sensemap': return <SenseMap b={b} v={v} set={set} />;
+    case 'window': return <WindowMap b={b} v={v} set={set} />;
+    case 'feelwheel': return <FeelWheel b={b} v={v} set={set} />;
+    case 'circles': return <Circles b={b} v={v} set={set} all={all} />;
+    case 'spoonday': return <SpoonDay b={b} v={v} set={set} />;
     default: return null;
   }
 }
@@ -405,7 +412,7 @@ export function answersText(lesson, ans = {}) {
     switch (b.t) {
       case 'text': case 'one': s = String(v).trim(); break;
       case 'list': case 'blanks': s = v.filter((x) => x?.trim()).map((x) => `• ${x.trim()}`).join('\n'); break;
-      case 'chips': s = (v.sel || []).map((x) => ((v.star || []).includes(x) ? `${x} ★` : x)).join(', '); break;
+      case 'chips': case 'feelwheel': s = (v.sel || []).map((x) => ((v.star || []).includes(x) ? `${x} ★` : x)).join(', '); break;
       case 'freq': s = FREQ[v]; break;
       case 'scale': s = `${v}/10 (0 = ${b.left}, 10 = ${b.right})`; break;
       case 'scales': s = Object.entries(v).map(([r, x]) => `${r}: ${x}/10`).join('\n'); break;
@@ -418,6 +425,11 @@ export function answersText(lesson, ans = {}) {
       case 'strike': s = `Struck out ${v.length}`; break;
       case 'rewrite': s = Object.entries(v).filter(([, x]) => x?.trim()).map(([i, x]) => `${b.rows[i][0]} → ${x.trim()}`).join('\n'); break;
       case 'plan': s = [v.obj && `Objective: ${v.obj}`, ...(v.goals || []).filter((g) => g.goal).map((g, i) => `Goal ${i + 1}: ${g.goal}${g.values ? ` (${g.values})` : ''}${(g.a || []).filter(Boolean).map((a) => `\n  - ${a}`).join('')}`)].filter(Boolean).join('\n'); break;
+      case 'radial': s = b.axes.filter(([n]) => v[n] != null).map(([n, , lv]) => `${n}: ${lv ? lv[v[n]] : `${v[n] + 1} of ${b.levels}`}`).join('\n'); break;
+      case 'sensemap': s = b.rows.filter((r) => v[r] != null).map((r) => `${r}: ${v[r] < 34 ? 'seeking' : v[r] > 66 ? 'avoiding' : 'comfy'}`).join('\n'); break;
+      case 'window': s = v.now == null ? '' : `Right now: ${v.now >= 67 ? 'above the window' : v.now >= 33 ? 'in the window' : 'below the window'}${v.log?.length ? ` (${v.log.length} logged)` : ''}`; break;
+      case 'circles': s = ['Closest', 'Close', 'Around'].map((r, k) => { const n = Object.keys(v).filter((x) => v[x] === k); return n.length ? `${r}: ${n.join(', ')}` : ''; }).filter(Boolean).join('\n'); break;
+      case 'spoonday': { const t = Object.entries(v.days || {}).slice(-1)[0]; s = t ? `${t[0]}: started with ${t[1].total}, spent ${t[1].spent.reduce((a, [, n]) => a + n, 0)} (${t[1].spent.map(([x]) => x).join(', ')})` : ''; break; }
       default: s = '';
     }
     if (s) out.push(L ? `${L}\n${s}` : s);
