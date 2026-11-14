@@ -75,7 +75,8 @@ export function SenseMap({ b, v, set }) {
   const X0 = 96, X1 = 292, row = (i) => 40 + i * 26;
   const toVal = (x) => Math.round(Math.max(0, Math.min(100, ((x - X0) / (X1 - X0)) * 100)));
   const move = (e) => { if (!drag.current) return; const p = svgPoint(e, svg.current); set({ ...val, [drag.current]: toVal(p.x) }); };
-  const zone = (x) => (x < 34 ? 'seeking' : x > 66 ? 'avoiding' : 'comfy');
+  const Z = b.zones || ['seeking', 'comfy', 'avoiding'];
+  const zone = (x) => (x < 34 ? Z[0] : x > 66 ? Z[2] : Z[1]);
   const H = 40 + b.rows.length * 26;
   return (
     <fieldset className="stack wb-set" style={{ gap: 12 }}>
@@ -83,7 +84,7 @@ export function SenseMap({ b, v, set }) {
       <div className="fig" style={{ boxShadow: '4px 4px 0 var(--block2)' }}>
         <svg ref={svg} viewBox={`0 0 300 ${H}`} aria-hidden="true" style={{ touchAction: 'none' }}
           onPointerMove={move} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
-          {[[X0, C.b2, 'seeking'], [X0 + 65.3, C.r, 'comfy'], [X0 + 130.6, C.b1, 'avoiding']].map(([x, f, l]) => (
+          {[[X0, C.b2, Z[0]], [X0 + 65.3, C.r, Z[1]], [X0 + 130.6, C.b1, Z[2]]].map(([x, f, l]) => (
             <g key={l}><rect x={x} y={22} width={65.4} height={H - 26} fill={f} stroke={C.ink} strokeWidth={2} /><text x={x + 32.7} y={14} fontSize={9.5} textAnchor="middle" fill={C.ink} style={mono}>{l.toUpperCase()}</text></g>
           ))}
           {b.rows.map((s, i) => {
@@ -99,7 +100,7 @@ export function SenseMap({ b, v, set }) {
             );
           })}
         </svg>
-        <figcaption>Tap or drag along each line. Left if you go looking for more of that sense, right if you try to get away from it.</figcaption>
+        <figcaption>{b.cap || 'Tap or drag along each line. Left if you go looking for more of that sense, right if you try to get away from it.'}</figcaption>
       </div>
       <details className="wb-details">
         <summary className="mono caps">Adjust with sliders</summary>
@@ -128,7 +129,9 @@ export function WindowMap({ b, v, set }) {
   const Y = (n) => 196 - n * 1.84; // 0..100 → 196..12
   const toN = (y) => Math.round(Math.max(0, Math.min(100, (196 - y) / 1.84)));
   const setFrom = (e) => { const p = svgPoint(e, svg.current); set({ ...val, now: toN(p.y) }); };
-  const zone = val.now == null ? null : WOT.find(([t]) => val.now >= t);
+  const bands = b.bands || WOT;
+  const tags = b.tags || ['HYPER · FIGHT, FLIGHT, MELTDOWN', 'THE WINDOW · CAN FEEL AND THINK', 'HYPO · SHUTDOWN, NUMB, FOGGY'];
+  const zone = val.now == null ? null : bands.find(([t]) => val.now >= t);
   const pts = val.log.slice(-8);
   const xs = (i) => 24 + i * ((232 - 24) / Math.max(1, 7));
   return (
@@ -143,9 +146,9 @@ export function WindowMap({ b, v, set }) {
           <rect x={2} y={Y(33)} width={296} height={200 - Y(33)} fill={C.b1} stroke={C.ink} strokeWidth={2} />
           {pts.length > 1 && <polyline points={pts.map((p, i) => `${xs(i)},${Y(p.v)}`).join(' ')} fill="none" stroke={C.ink} strokeWidth={2} strokeLinejoin="round" strokeDasharray="4 3" />}
           {pts.map((p, i) => <circle key={p.at} cx={xs(i)} cy={Y(p.v)} r={4} fill={C.g} stroke={C.ink} strokeWidth={1.5} />)}
-          <g><rect x={5} y={20 - 11} width={194.5} height={15} fill={C.b1} /><text x={10} y={20} fontSize={9.5} fill={C.ink} style={mono}>HYPER · FIGHT, FLIGHT, MELTDOWN</text></g>
-          <g><rect x={5} y={Y(67) + 16 - 11} width={194.5} height={15} fill={C.b2} /><text x={10} y={Y(67) + 16} fontSize={9.5} fill={C.t2} style={mono}>THE WINDOW · CAN FEEL AND THINK</text></g>
-          <g><rect x={5} y={Y(33) + 16 - 11} width={176.6} height={15} fill={C.b1} /><text x={10} y={Y(33) + 16} fontSize={9.5} fill={C.ink} style={mono}>HYPO · SHUTDOWN, NUMB, FOGGY</text></g>
+          <g><rect x={5} y={20 - 11} width={tags[0].length * 5.95 + 10} height={15} fill={C.b1} /><text x={10} y={20} fontSize={9.5} fill={C.ink} style={mono}>{tags[0]}</text></g>
+          <g><rect x={5} y={Y(67) + 16 - 11} width={tags[1].length * 5.95 + 10} height={15} fill={C.b2} /><text x={10} y={Y(67) + 16} fontSize={9.5} fill={C.t2} style={mono}>{tags[1]}</text></g>
+          <g><rect x={5} y={Y(33) + 16 - 11} width={tags[2].length * 5.95 + 10} height={15} fill={C.b1} /><text x={10} y={Y(33) + 16} fontSize={9.5} fill={C.ink} style={mono}>{tags[2]}</text></g>
           {val.now != null && (
             <g>
               <line x1={240} y1={Y(val.now)} x2={292} y2={Y(val.now)} stroke={C.ink} strokeWidth={2} />
@@ -155,7 +158,7 @@ export function WindowMap({ b, v, set }) {
           )}
           {val.now == null && <text x={266} y={Y(50) + 30} fontSize={9.5} textAnchor="middle" fill={C.t2} style={mono}>TAP</text>}
         </svg>
-        <figcaption>Tap where you are right now. Log it to see how you move over a few days.</figcaption>
+        <figcaption>{b.cap || 'Tap where you are right now. Log it to see how you move over a few days.'}</figcaption>
       </div>
       <label className="stack" style={{ gap: 2 }}>
         <span className="mono-s caps mute">Or use the slider · shut down to overwhelmed</span>
@@ -177,7 +180,7 @@ export function FeelWheel({ b, v, set }) {
   const [add, setAdd] = useState('');
   const G = b.groups, N = G.length, step = (2 * Math.PI) / N;
   const fills = [C.b1, C.b2, C.r, C.b1, C.b2, C.r, C.b2];
-  const short = b.short;
+  const short = b.short || G.map((g) => g[0].split(/[ ,]/)[0]);
   const [gname, words, gnote] = G[act];
   const count = (i) => G[i][1].filter((w) => val.sel.includes(w)).length;
   const tog = (w) => set({ ...val, sel: val.sel.includes(w) ? val.sel.filter((x) => x !== w) : [...val.sel, w] });
@@ -202,7 +205,7 @@ export function FeelWheel({ b, v, set }) {
           <text x={150} y={147} fontSize={9.5} textAnchor="middle" fill={C.ink} style={mono}>HOW DO</text>
           <text x={150} y={159} fontSize={9.5} textAnchor="middle" fill={C.ink} style={mono}>I FEEL?</text>
         </svg>
-        <figcaption>Tap a slice to open that family of feelings, then pick the words that fit.</figcaption>
+        <figcaption>{b.cap || 'Tap a slice to open that family of feelings, then pick the words that fit.'}</figcaption>
       </div>
       <div className="seg wb-seg-sm" role="tablist" aria-label="Feeling families" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
         {G.map((g, i) => <button key={g[0]} type="button" role="tab" aria-selected={i === act} onClick={() => setAct(i)}>{short[i]}{count(i) ? ` ${count(i)}` : ''}</button>)}
@@ -222,8 +225,9 @@ export function FeelWheel({ b, v, set }) {
 }
 
 // ---------------------------------------------------------------- circles of closeness
-const RINGS = ['Closest', 'Close', 'Around'];
+const RINGS0 = ['Closest', 'Close', 'Around'];
 export function Circles({ b, v, set, all }) {
+  const RINGS = b.rings || RINGS0;
   const val = v || {};
   const [add, setAdd] = useState('');
   const fromList = (all[b.from] || []).map((x) => x?.trim()).filter(Boolean);
@@ -251,7 +255,7 @@ export function Circles({ b, v, set, all }) {
           })}
           {!names.some((n) => val[n] != null) && <text x={150} y={256} fontSize={9.5} textAnchor="middle" fill={C.ink} style={mono}>ADD PEOPLE BELOW</text>}
         </svg>
-        <figcaption>Your circles. Strawberry people go in the inner circle. There's no right number, and people can move.</figcaption>
+        <figcaption>{b.cap || "Your circles. Strawberry people go in the inner circle. There's no right number, and people can move."}</figcaption>
       </div>
       {names.map((n) => (
         <div key={n} className="stack" style={{ gap: 4 }}>
@@ -314,6 +318,57 @@ export function SpoonDay({ b, v, set }) {
         </div>
       )}
       <Legend>Starts fresh each day. The app keeps the last two weeks so you can look back.</Legend>
+    </fieldset>
+  );
+}
+
+// ---------------------------------------------------------------- interactive image: tap to drop pins
+// b.image: 'body' (built-in outline) or a data:image URL. b.tags: optional quick labels for pins.
+function BodyOutline() {
+  const p = { fill: C.r, stroke: C.ink, strokeWidth: 2, strokeLinejoin: 'round' };
+  return (
+    <g>
+      <ellipse {...p} cx={150} cy={40} rx={21} ry={24} />
+      <path {...p} d="M159 64 L159 74 C177 76 187 80 190 86 L203 164 C205 172 194 175 192 167 L184 112 L180 172 L183 188 L176 290 C175 298 160 298 159 290 L152 196 L150 192 L148 196 L141 290 C140 298 125 298 124 290 L117 188 L120 172 L116 112 L108 167 C106 175 95 172 97 164 L110 86 C113 80 123 76 141 74 L141 64 Z" />
+    </g>
+  );
+}
+export function PinMap({ b, v, set }) {
+  const pins = Array.isArray(v) ? v : [];
+  const svg = useRef(null);
+  const [sel, setSel] = useState(null);
+  const body = b.image === 'body';
+  const VW = 300, VH = b.h || (body ? 300 : 220);
+  const add = (e) => {
+    const p = svgPoint(e, svg.current);
+    const x = Math.round((p.x / VW) * 1000) / 10, y = Math.round((p.y / VH) * 1000) / 10;
+    const next = [...pins, { x, y, label: '' }];
+    set(next); setSel(next.length - 1);
+  };
+  const upd = (i, patch) => set(pins.map((q, j) => (j === i ? { ...q, ...patch } : q)));
+  return (
+    <fieldset className="stack wb-set" style={{ gap: 12 }}>
+      <legend className="wb-q">{b.label}</legend>
+      <div className="fig" style={{ boxShadow: '4px 4px 0 var(--block2)' }}>
+        <svg ref={svg} viewBox={`0 0 ${VW} ${VH}`} aria-hidden="true" style={{ touchAction: 'manipulation', cursor: 'crosshair' }} onClick={add}>
+          {body ? <BodyOutline /> : <image href={b.image} x={0} y={0} width={VW} height={VH} preserveAspectRatio="xMidYMid meet" />}
+          {pins.map((q, i) => (
+            <g key={i} onClick={(e) => { e.stopPropagation(); setSel(i); }} style={{ cursor: 'pointer' }}>
+              <circle cx={(q.x / 100) * VW} cy={(q.y / 100) * VH} r={11} fill={i === sel ? C.ink : C.b2} stroke={C.ink} strokeWidth={2} />
+              <text x={(q.x / 100) * VW} y={(q.y / 100) * VH + 4} fontSize={11} textAnchor="middle" fill={i === sel ? C.g : C.t2} style={mono}>{i + 1}</text>
+            </g>
+          ))}
+        </svg>
+        <figcaption>{b.cap || 'Tap the picture to drop a pin. Then say what it is underneath.'}</figcaption>
+      </div>
+      {pins.map((q, i) => (
+        <div key={i} className="wb-rowcard" style={{ gap: 6, borderColor: i === sel ? 'var(--ink)' : undefined, boxShadow: i === sel ? '3px 3px 0 var(--block2)' : 'none' }}>
+          <p className="between"><span className="mono caps">Pin {i + 1}</span><button type="button" className="link-btn mono-s" onClick={() => { set(pins.filter((_, j) => j !== i)); setSel(null); }}>remove</button></p>
+          <input className="field" value={q.label} placeholder={b.hint || 'What is here?'} aria-label={`Pin ${i + 1}`} onFocus={() => setSel(i)} onChange={(e) => upd(i, { label: e.target.value })} />
+          {b.tags && <div className="wb-chips">{b.tags.map((t) => <button key={t} type="button" className="chip" aria-pressed={q.label === t} onClick={() => upd(i, { label: q.label === t ? '' : t })}>{t}</button>)}</div>}
+        </div>
+      ))}
+      {!pins.length && <p className="mono-s mute">No pins yet.</p>}
     </fieldset>
   );
 }

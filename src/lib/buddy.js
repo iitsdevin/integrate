@@ -6,6 +6,8 @@ import { DEFAULT_PLAN } from '../data/daily.js';
 import { searchLibrary, listBooks } from './library.js';
 import { COURSE, MODULES, VALUES, DOMAINS } from '../data/course.js';
 import { WORKBOOK, MODULES as WB_MODULES, lessonById as wbLesson } from '../data/workbook.js';
+import { getPacks } from './packs.js';
+const allWbLessons = () => [...WORKBOOK.lessons, ...getPacks().flatMap((b) => b.lessons.map((l) => ({ ...l, packTitle: b.title })))];
 import { answersText } from '../components/WorkbookTools.jsx';
 
 const API = 'https://api.anthropic.com/v1/messages';
@@ -64,7 +66,7 @@ function systemPrompt() {
     `Sits in the last 14 days: ${recent}. Total sits recorded: ${s.sits.length}.`,
     `They are doing a course in the Toolkit, "ACT for ADHD": ${MODULES.map((m) => m.no + ' ' + m.name + ' (' + m.lessons.filter((l) => s.course?.done?.[l.id]).length + '/' + m.lessons.length + ' done)').join('; ')}. Their worksheet and reflection answers are journal entries starting "ACT for ADHD". Link what they bring to a lesson or exercise when it genuinely helps (e.g. Leaves on a stream, Dropping anchor, Urge surfing, the Unhooking lab, the step-down), using the course's language: away and towards moves, hooks, unhooking, making room, values, the tiny first step. Never treat ADHD struggles as a willpower problem.`,
     (() => { const v = VALUES.filter((w) => s.course?.values?.[w] === 'very'); const b = DOMAINS.map(([d, n]) => s.course?.bullseye?.[d] ? `${n}: ${s.course.bullseye[d].text || '(no words yet)'} — ${s.course.bullseye[d].score ?? '?'}/10 close` : null).filter(Boolean); return (v.length ? `Their values card sort, matters most: ${v.join(', ')}.` : '') + (b.length ? ` Their bull's-eye: ${b.join('; ')}.` : ''); })(),
-    `They are also working through "${WORKBOOK.title}", an interactive companion to ${WORKBOOK.book} by ${WORKBOOK.authors}: ${WB_MODULES.map((m) => m.no + ' ' + m.name + ' (' + m.lessons.filter((l) => s.wb?.done?.[l.id]).length + '/' + m.lessons.length + ')').join('; ')}. Use get_workbook_answers to read what they wrote (their safety plan, burnout signs, values, boundaries, action plan and so on) when it would help. Its language: spiky profile, spins, burnout, masking and unmasking, PRIMA (pause, regulate, identify, meaning, allow), soothing rhythm breathing, Compassionate Other, strawberry people, NICE tasks, gentle returns. If they are close to a meltdown, their safety and soothing plan comes first.`,
+    `They are also working through "${WORKBOOK.title}", an interactive companion to ${WORKBOOK.book} by ${WORKBOOK.authors}: ${WB_MODULES.map((m) => m.no + ' ' + m.name + ' (' + m.lessons.filter((l) => s.wb?.done?.[l.id]).length + '/' + m.lessons.length + ')').join('; ')}. Use get_workbook_answers to read what they wrote (their safety plan, burnout signs, values, boundaries, action plan and so on) when it would help. Its language: spiky profile, spins, burnout, masking and unmasking, PRIMA (pause, regulate, identify, meaning, allow), soothing rhythm breathing, Compassionate Other, strawberry people, NICE tasks, gentle returns. If they are close to a meltdown, their safety and soothing plan comes first.${getPacks().length ? ` They also have private workbook packs on this phone: ${getPacks().map((b) => b.title).join('; ')}. get_workbook_answers covers those too.` : ''}`,
     s.settings.aboutMe ? `\nWhat they've told the app about themselves:\n${s.settings.aboutMe}` : '',
   ].join('\n');
 }
@@ -80,7 +82,7 @@ export const TOOLS = [
   { name: 'list_library_books', description: 'The books they have added to their library (full text is searchable).', input_schema: { type: 'object', properties: {} } },
   { name: 'search_library', description: 'Search the full text of the books in their library. Returns the most relevant passages with title and page or section reference. Use specific words likely to appear in the book.',
     input_schema: { type: 'object', properties: { query: { type: 'string' }, book_id: { type: 'string', description: 'Optional: limit to one book.' } }, required: ['query'] } },
-  { name: 'get_workbook_answers', description: 'What they have written in the Neurodivergence Skills workbook. With no lesson_id, lists the lessons that have answers. With a lesson_id, returns that lesson\'s answers as text.',
+  { name: 'get_workbook_answers', description: 'What they have written in the Neurodivergence Skills workbook and any private workbook packs. With no lesson_id, lists the lessons that have answers. With a lesson_id, returns that lesson\'s answers as text.',
     input_schema: { type: 'object', properties: { lesson_id: { type: 'string', description: 'e.g. wb-safety, wb-burnout, wb-qualities, wb-action' } } } },
   { name: 'propose_plan', description: 'Show them a draft practice plan as a card with "Use this plan" and "Change it" buttons. Use after looking at their history.',
     input_schema: { type: 'object', properties: {
@@ -128,8 +130,8 @@ async function runTool(name, input) {
     }
     case 'get_workbook_answers': {
       const ans = s.wb?.ans || {};
-      if (!input.lesson_id) return { lessons: WORKBOOK.lessons.filter((l) => ans[l.id] && answersText(l, ans[l.id]).trim()).map((l) => ({ id: l.id, module: `${l.moduleNo} ${l.moduleName}`, title: l.title, done: !!s.wb?.done?.[l.id] })) };
-      const l = wbLesson(input.lesson_id);
+      if (!input.lesson_id) return { lessons: allWbLessons().filter((l) => ans[l.id] && answersText(l, ans[l.id]).trim()).map((l) => ({ id: l.id, ...(l.packTitle ? { pack: l.packTitle } : {}), module: `${l.moduleNo} ${l.moduleName}`, title: l.title, done: !!s.wb?.done?.[l.id] })) };
+      const l = wbLesson(input.lesson_id) || allWbLessons().find((x) => x.id === input.lesson_id);
       if (!l) return { error: 'No lesson with that id. Call without lesson_id to list them.' };
       return { lesson: `${l.moduleName} › ${l.title}`, book_pages: l.pg, answers: answersText(l, ans[l.id] || {}) || '(nothing written yet)' };
     }

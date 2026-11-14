@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { getState, setState, addEntry } from '../lib/store.js';
 import { FREQ } from '../data/workbook.js';
 import { toast } from './bits.jsx';
-import { RadialMap, SenseMap, WindowMap, FeelWheel, Circles, SpoonDay } from './WorkbookMaps.jsx';
+import { RadialMap, SenseMap, WindowMap, FeelWheel, Circles, SpoonDay, PinMap } from './WorkbookMaps.jsx';
 
 export const wbState = (s = getState()) => ({ done: {}, ans: {}, practiced: {}, ...(s.wb || {}) });
 export const setWb = (fn) => setState((s) => ({ ...s, wb: fn(wbState(s)) }));
@@ -163,6 +163,7 @@ function Item({ b, lid, all }) {
     case 'feelwheel': return <FeelWheel b={b} v={v} set={set} />;
     case 'circles': return <Circles b={b} v={v} set={set} all={all} />;
     case 'spoonday': return <SpoonDay b={b} v={v} set={set} />;
+    case 'pins': return <PinMap b={b} v={v} set={set} />;
     default: return null;
   }
 }
@@ -429,6 +430,7 @@ export function answersText(lesson, ans = {}) {
       case 'sensemap': s = b.rows.filter((r) => v[r] != null).map((r) => `${r}: ${v[r] < 34 ? 'seeking' : v[r] > 66 ? 'avoiding' : 'comfy'}`).join('\n'); break;
       case 'window': s = v.now == null ? '' : `Right now: ${v.now >= 67 ? 'above the window' : v.now >= 33 ? 'in the window' : 'below the window'}${v.log?.length ? ` (${v.log.length} logged)` : ''}`; break;
       case 'circles': s = ['Closest', 'Close', 'Around'].map((r, k) => { const n = Object.keys(v).filter((x) => v[x] === k); return n.length ? `${r}: ${n.join(', ')}` : ''; }).filter(Boolean).join('\n'); break;
+      case 'pins': s = v.map((q, i) => `${i + 1}. ${q.label || '(no label)'}`).join('\n'); break;
       case 'spoonday': { const t = Object.entries(v.days || {}).slice(-1)[0]; s = t ? `${t[0]}: started with ${t[1].total}, spent ${t[1].spent.reduce((a, [, n]) => a + n, 0)} (${t[1].spent.map(([x]) => x).join(', ')})` : ''; break; }
       default: s = '';
     }

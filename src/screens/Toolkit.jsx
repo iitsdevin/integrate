@@ -9,17 +9,33 @@ import Course from './Course.jsx';
 import { COURSE } from '../data/course.js';
 import Workbook from './Workbook.jsx';
 import { WORKBOOK } from '../data/workbook.js';
+import { usePacks, packsLoaded } from '../lib/packs.js';
 
 export default function Toolkit({ view, onView, onBegin, onAskBook }) {
   if (view === 'library') return null; // rendered by Library.jsx
   if (view === COURSE.id) return <Course onBack={() => onView(null)} onBegin={onBegin} />;
   if (view === WORKBOOK.id) return <Workbook onBack={() => onView(null)} />;
+  if (view?.startsWith('pack-')) return <PackView view={view} onView={onView} />;
   const cat = view && findCategory(view);
   if (cat) return <Category cat={cat} onBack={() => onView(null)} onBegin={onBegin} onAskBook={onAskBook} />;
   return <Grid onView={onView} />;
 }
 
+function PackView({ view, onView }) {
+  const packs = usePacks();
+  const book = packs.find((b) => b.view === view);
+  if (book) return <Workbook key={book.id + book.updatedAt} book={book} onBack={() => onView(null)} />;
+  return (
+    <main className="screen">
+      <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => onView(null)}><Icon.back /> Toolkit</button>
+      <p className="notice">{packsLoaded() ? "That pack isn't on this phone. Import it from Settings, under Private packs." : 'Opening…'}</p>
+    </main>
+  );
+}
+
 function Grid({ onView }) {
+  const packs = usePacks();
+  const wbAll = useStore((s) => s.wb?.done) || {};
   const [books, setBooks] = useState([]);
   const done = useStore((s) => s.course?.done) || {};
   const doneCount = COURSE.lessons.filter((l) => done[l.id]).length;
@@ -64,9 +80,22 @@ function Grid({ onView }) {
         </span>
         <Icon.arrow />
       </button>
+      {packs.map((b, i) => {
+        const n = b.lessons.filter((l) => wbAll[l.id]).length;
+        return (
+          <button key={b.id} type="button" className="tile lime" style={{ minHeight: 0, flexDirection: 'row', alignItems: 'center' }} onClick={() => onView(b.view)}>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span className="mono-s caps">{11 + i} — private · {n ? `${n} of ${b.lessons.length} done` : `${b.modules.length} module${b.modules.length > 1 ? 's' : ''} · ${b.lessons.length} lessons`}</span>
+              <b style={{ marginTop: 4, overflowWrap: 'anywhere' }}>{b.title}</b>
+              {(b.sub || b.source?.title) && <span className="h mono-s">{(b.sub || b.source.title).toLowerCase()}</span>}
+            </span>
+            <Icon.arrow />
+          </button>
+        );
+      })}
       <button type="button" className="tile lib" onClick={() => onView('library')}>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span className="mono-s caps">11 — ask your books</span>
+          <span className="mono-s caps">{11 + packs.length} — ask your books</span>
           <b style={{ marginTop: 4 }}>Your library</b>
           <span className="h mono-s">{books.length ? `${books.length} book${books.length > 1 ? 's' : ''} on this phone` : 'add PDFs or EPUBs you own, then ask them questions'}</span>
         </span>

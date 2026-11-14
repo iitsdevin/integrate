@@ -6,6 +6,7 @@ import { SCHEMES, resolveDark } from '../lib/theme.js';
 import { SOUNDS, unlockAudio, ring, preloadBells } from '../lib/bells.js';
 import { shareOrDownload, importText, daysSinceBackup } from '../lib/backup.js';
 import { storageEstimate, askPersist } from '../lib/library.js';
+import { usePacks, importPackText, removePack } from '../lib/packs.js';
 
 export default function Settings({ open, onClose }) {
   const settings = useStore((s) => s.settings);
@@ -19,6 +20,10 @@ export default function Settings({ open, onClose }) {
   const [store, setStore] = useState({});
   const [about, setAbout] = useState(settings.aboutMe);
   const fileRef = useRef(null);
+  const packRef = useRef(null);
+  const packs = usePacks();
+  const [packMsg, setPackMsg] = useState('');
+  const [confirmRm, setConfirmRm] = useState(null);
 
   useEffect(() => { if (open) { setHasKey(!!getApiKey()); setAbout(settings.aboutMe); storageEstimate().then(setStore); setMsg(''); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -111,6 +116,28 @@ export default function Settings({ open, onClose }) {
           {store.persisted === false && (
             <button type="button" className="link-btn" onClick={async () => { const ok = await askPersist(); setStore({ ...store, persisted: ok }); toast(ok ? 'Storage protected' : 'The browser said no'); }}>Ask the browser to keep my data</button>
           )}
+        </section>
+
+        <section className="stack" aria-labelledby="packH">
+          <h3 id="packH" className="mono caps">Private packs</h3>
+          <p className="soft" style={{ fontSize: '0.875rem' }}>Workbooks made for you from material you own. A pack lives only on this phone. It isn't part of the app or the website, and it's left out of backups, so keep the pack file in Files. Your answers are backed up as usual.</p>
+          {packs.map((b) => (
+            <div key={b.id} className="between" style={{ gap: 10, padding: '8px 0', borderBottom: '1px solid color-mix(in srgb, var(--ink) 22%, transparent)' }}>
+              <span style={{ minWidth: 0 }}><b style={{ overflowWrap: 'anywhere' }}>{b.title}</b><span className="mono-s mute" style={{ display: 'block' }}>{b.modules.length} module{b.modules.length > 1 ? 's' : ''} · {b.lessons.length} lessons</span></span>
+              <button type="button" className="btn btn-mono btn-tight" onClick={async () => {
+                if (confirmRm !== b.id) { setConfirmRm(b.id); return; }
+                await removePack(b.id); setConfirmRm(null); toast('Pack removed. Your answers are kept.');
+              }}>{confirmRm === b.id ? 'Tap to confirm' : 'Remove'}</button>
+            </div>
+          ))}
+          <button type="button" className="btn" onClick={() => packRef.current?.click()}>Import a pack</button>
+          <input ref={packRef} type="file" accept="application/json,.json" hidden onChange={async (e) => {
+            const f = e.target.files?.[0]; e.target.value = '';
+            if (!f) return;
+            try { const r = await importPackText(await f.text()); setPackMsg(`${r.replaced ? 'Updated' : 'Added'} ${r.title}: ${r.modules} module${r.modules > 1 ? 's' : ''}, ${r.lessons} lessons. It's in Toolkit.`); }
+            catch (err) { setPackMsg(err.message || "Couldn't read that pack."); }
+          }} />
+          {packMsg && <p className="notice" role="status">{packMsg}</p>}
         </section>
 
         <p className="mono-s mute">Integrate · works offline once loaded · add it to your home screen from the share menu</p>

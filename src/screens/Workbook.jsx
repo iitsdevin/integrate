@@ -11,7 +11,16 @@ import { Figure } from '../components/WorkbookFigures.jsx';
 const KIND = { learn: 'Read', practice: 'Guided', exercise: 'Exercise' };
 const TILE = ['plain', 'lavender', 'plain', 'lime', 'lavender', 'plain', 'ink', 'lavender', 'plain', 'lime'];
 
-export default function Workbook({ onBack }) {
+// The built-in workbook. Private packs (lib/packs.js) arrive in the same shape.
+export const BUILTIN = {
+  id: WORKBOOK.id, title: WORKBOOK.title, builtin: true,
+  eyebrow: '10 — workbook · kemp & mitchelson', big: 'skills', sub: 'for autism & adhd', blurb: WORKBOOK.blurb,
+  modules: MODULES, lessons: ALL_LESSONS, needs: NEEDS, help: HELP, pageLabel: 'p.', backLabel: 'The workbook',
+};
+
+const pages = (book, pg) => (pg && book.pageLabel ? `${book.pageLabel} ${pg}` : '');
+
+export default function Workbook({ onBack, book = BUILTIN }) {
   const wb = wbState(useStore((s) => s));
   const bell = useStore((s) => s.settings.bell);
   const [mod, setMod] = useState(null);
@@ -19,12 +28,13 @@ export default function Workbook({ onBack }) {
   const [need, setNeed] = useState(null);
   const [open, setOpen] = useState(null);
   const [playing, setPlaying] = useState(null);
+  const { modules: MODS, lessons: LESSONS } = book;
   const done = wb.done;
-  const count = ALL_LESSONS.filter((l) => done[l.id]).length;
-  const next = ALL_LESSONS.find((l) => !done[l.id]);
-  const lesson = open && ALL_LESSONS.find((l) => l.id === open);
-  const module = mod && MODULES.find((m) => m.id === mod);
-  const practices = ALL_LESSONS.filter((l) => l.steps);
+  const count = LESSONS.filter((l) => done[l.id]).length;
+  const next = LESSONS.find((l) => !done[l.id]);
+  const lesson = open && LESSONS.find((l) => l.id === open);
+  const module = mod && MODS.find((m) => m.id === mod);
+  const practices = LESSONS.filter((l) => l.steps);
 
   useEffect(() => { window.scrollTo(0, 0); }, [mod]);
 
@@ -38,24 +48,24 @@ export default function Workbook({ onBack }) {
   if (playing) return <Player lesson={playing} bell={bell} onClose={() => setPlaying(null)} onFinish={() => finish(playing)} />;
 
   const sheet = (
-    <Sheet open={!!lesson} onClose={() => setOpen(null)} tall title={lesson?.title.toLowerCase()} kicker={lesson ? `${lesson.moduleNo} ${lesson.moduleName} · p. ${lesson.pg}` : ''}>
-      {lesson && <Lesson lesson={lesson} wb={wb}
+    <Sheet open={!!lesson} onClose={() => setOpen(null)} tall title={lesson?.title.toLowerCase()} kicker={lesson ? [`${lesson.moduleNo} ${lesson.moduleName}`, pages(book, lesson.pg)].filter(Boolean).join(' · ') : ''}>
+      {lesson && <Lesson lesson={lesson} wb={wb} book={book}
         onPlay={() => { setOpen(null); setTimeout(() => setPlaying(lesson), 50); }}
-        onNext={() => { const i = ALL_LESSONS.findIndex((l) => l.id === lesson.id); const n = ALL_LESSONS[i + 1]; if (n) { setOpen(n.id); if (mod && n.moduleId !== mod) setMod(n.moduleId); } else setOpen(null); }} />}
+        onNext={() => { const i = LESSONS.findIndex((l) => l.id === lesson.id); const n = LESSONS[i + 1]; if (n) { setOpen(n.id); if (mod && n.moduleId !== mod) setMod(n.moduleId); } else setOpen(null); }} />}
     </Sheet>
   );
 
   if (module) {
     const mDone = module.lessons.filter((l) => done[l.id]).length;
-    const i = MODULES.indexOf(module), n = MODULES[i + 1];
+    const i = MODS.indexOf(module), n = MODS[i + 1];
     return (
       <main className="screen">
-        <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setMod(null)}><Icon.back /> The workbook</button>
+        <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setMod(null)}><Icon.back /> {book.backLabel}</button>
         <header className="stack" style={{ gap: 8 }}>
-          <p className="mono caps">Module {module.no} · book pages {module.pages}</p>
+          <p className="mono caps">Module {module.no}{module.pages ? ` · ${book.builtin ? 'book pages' : 'pages'} ${module.pages}` : ''}</p>
           <h1 className="word" style={{ fontSize: 'clamp(3.2rem, 16vw, 4.4rem)', overflowWrap: 'anywhere' }}>{module.name.toLowerCase()}</h1>
-          <p className="mono caps soft">{module.skill}</p>
-          <p style={{ fontSize: '1.0625rem', lineHeight: 1.45 }}>{module.intro}</p>
+          {module.skill && <p className="mono caps soft">{module.skill}</p>}
+          {module.intro && <p style={{ fontSize: '1.0625rem', lineHeight: 1.45 }}>{module.intro}</p>}
         </header>
         <Progress items={module.lessons} done={done} label={`${mDone} of ${module.lessons.length} done`} />
         <div className="list">
@@ -64,7 +74,7 @@ export default function Workbook({ onBack }) {
               <span className="n">{done[l.id] ? '●' : String(k + 1).padStart(2, '0')}</span>
               <span className="t">{l.title}</span>
               <span className="m">{KIND[l.kind].toUpperCase()}</span>
-              <span className="d">{l.short} · {l.mins} min · p. {l.pg}{wb.practiced[l.id]?.length ? ` · practised ${wb.practiced[l.id].length}×` : ''}</span>
+              <span className="d">{[l.short, l.mins && `${l.mins} min`, pages(book, l.pg), wb.practiced[l.id]?.length && `practised ${wb.practiced[l.id].length}×`].filter(Boolean).join(' · ')}</span>
             </button>
           ))}
         </div>
@@ -78,17 +88,18 @@ export default function Workbook({ onBack }) {
     <main className="screen">
       <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={onBack}><Icon.back /> Toolkit</button>
       <header style={{ position: 'relative' }}>
-        <p className="mono caps">10 — workbook · kemp &amp; mitchelson</p>
+        <p className="mono caps">{book.eyebrow}</p>
         <div style={{ position: 'relative', marginTop: 6 }}>
-          <div aria-hidden="true" style={{ position: 'absolute', left: '1.3em', top: '0.38em', width: '2.2em', height: '0.5em', background: 'var(--block1)', fontSize: 'clamp(4.6rem, 25vw, 6.4rem)' }} />
-          <h1 className="word" style={{ position: 'relative', fontSize: 'clamp(4.6rem, 25vw, 6.4rem)' }}>skills</h1>
-          <p className="word" style={{ position: 'relative', fontSize: 'clamp(1.7rem, 8.4vw, 2.3rem)', marginTop: 4 }}>for autism &amp; adhd</p>
+          <div aria-hidden="true" style={{ position: 'absolute', left: '1.3em', top: '0.38em', width: '2.2em', height: '0.5em', background: book.builtin ? 'var(--block1)' : 'var(--block2)', fontSize: 'clamp(4.6rem, 25vw, 6.4rem)' }} />
+          <h1 className="word" style={{ position: 'relative', fontSize: book.big.length > 7 ? 'clamp(3.2rem, 17vw, 4.6rem)' : 'clamp(4.6rem, 25vw, 6.4rem)', overflowWrap: 'anywhere' }}>{book.big}</h1>
+          {book.sub && <p className="word" style={{ position: 'relative', fontSize: 'clamp(1.7rem, 8.4vw, 2.3rem)', marginTop: 4 }}>{book.sub}</p>}
         </div>
         <Spark size={18} style={{ right: 6, top: 36 }} />
       </header>
-      <p style={{ fontSize: '1.0625rem', lineHeight: 1.45 }}>{WORKBOOK.blurb}</p>
+      {book.blurb && <p style={{ fontSize: '1.0625rem', lineHeight: 1.45 }}>{book.blurb}</p>}
+      {book.private && <p className="mono-s mute">Private pack · stored only on this phone</p>}
 
-      <Progress items={ALL_LESSONS} done={done} label={`${count} of ${ALL_LESSONS.length} lessons`} />
+      <Progress items={LESSONS} done={done} label={`${count} of ${LESSONS.length} lessons`} />
       {next && (
         <button type="button" className="btn btn-ink btn-shadow btn-block begin" onClick={() => setOpen(next.id)}>
           <span style={{ textAlign: 'left', minWidth: 0 }}>{count ? 'Continue' : 'Start here'}<span className="mono" style={{ display: 'block', fontSize: '0.6875rem', opacity: 0.8, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{next.moduleNo} · {next.title}</span></span>
@@ -96,38 +107,42 @@ export default function Workbook({ onBack }) {
         </button>
       )}
 
-      <section className="stack" aria-labelledby="wbNeedH">
-        <h2 id="wbNeedH" className="mono caps" style={{ fontWeight: 400 }}>What do I need right now?</h2>
-        <div className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
-          {NEEDS.map(([nid, label]) => <button key={nid} type="button" className="chip" style={{ padding: '0 10px', fontSize: '0.875rem' }} aria-pressed={need === nid} onClick={() => setNeed(need === nid ? null : nid)}>{label}</button>)}
-        </div>
-        {need && (
-          <div className="list" aria-live="polite">
-            {ALL_LESSONS.filter((l) => l.needs?.includes(need)).sort((x, y) => (y.id === 'wb-safety') - (x.id === 'wb-safety')).map((l) => (
-              <button key={l.id} type="button" className="item" onClick={() => (l.steps && !l.items?.length ? setPlaying(l) : setOpen(l.id))}>
-                <span className="n">{l.steps ? '▶' : '→'}</span><span className="t">{l.title}</span><span className="m">{l.mins} MIN</span><span className="d">{l.short}</span>
-              </button>
-            ))}
+      {book.needs?.length > 0 && (
+        <section className="stack" aria-labelledby="wbNeedH">
+          <h2 id="wbNeedH" className="mono caps" style={{ fontWeight: 400 }}>What do I need right now?</h2>
+          <div className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
+            {book.needs.map(([nid, label]) => <button key={nid} type="button" className="chip" style={{ padding: '0 10px', fontSize: '0.875rem' }} aria-pressed={need === nid} onClick={() => setNeed(need === nid ? null : nid)}>{label}</button>)}
           </div>
-        )}
-      </section>
+          {need && (
+            <div className="list" aria-live="polite">
+              {LESSONS.filter((l) => l.needs?.includes(need)).sort((x, y) => (y.id === 'wb-safety') - (x.id === 'wb-safety')).map((l) => (
+                <button key={l.id} type="button" className="item" onClick={() => (l.steps && !l.items?.length ? setPlaying(l) : setOpen(l.id))}>
+                  <span className="n">{l.steps ? '▶' : '→'}</span><span className="t">{l.title}</span><span className="m">{l.mins} MIN</span><span className="d">{l.short}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
-      <div className="seg" role="tablist" aria-label="Workbook">
-        <button type="button" role="tab" aria-selected={tab === 'modules'} onClick={() => setTab('modules')}>Modules · {MODULES.length}</button>
-        <button type="button" role="tab" aria-selected={tab === 'practices'} onClick={() => setTab('practices')}>Practices · {practices.length}</button>
-      </div>
+      {practices.length > 0 && (
+        <div className="seg" role="tablist" aria-label={book.title}>
+          <button type="button" role="tab" aria-selected={tab === 'modules'} onClick={() => setTab('modules')}>Modules · {MODS.length}</button>
+          <button type="button" role="tab" aria-selected={tab === 'practices'} onClick={() => setTab('practices')}>Practices · {practices.length}</button>
+        </div>
+      )}
 
-      {tab === 'modules' && (
+      {(tab === 'modules' || !practices.length) && (
         <div role="tabpanel" className="stack" style={{ gap: 10 }}>
-          {MODULES.map((m, k) => {
+          {MODS.map((m, k) => {
             const d = m.lessons.filter((l) => done[l.id]).length;
             return (
-              <button key={m.id} type="button" className={`tile ${TILE[k]}`} style={{ minHeight: 0 }} onClick={() => setMod(m.id)}>
-                <span className="between mono-s caps"><span>{m.no} · p. {m.pages}</span><span>{d}/{m.lessons.length}</span></span>
+              <button key={m.id} type="button" className={`tile ${TILE[k % TILE.length]}`} style={{ minHeight: 0 }} onClick={() => setMod(m.id)}>
+                <span className="between mono-s caps"><span>{m.no}{m.pages ? ` · ${pages(book, m.pages)}` : ''}</span><span>{d}/{m.lessons.length}</span></span>
                 <b>{m.name}</b>
-                <span className="mono-s" style={{ display: 'block', marginTop: 2 }}>{m.skill}</span>
-                <span aria-hidden="true" style={{ display: 'grid', gridTemplateColumns: `repeat(${m.lessons.length}, minmax(0, 1fr))`, gap: 3, marginTop: 8 }}>
-                  {m.lessons.map((l) => <i key={l.id} style={{ height: 6, border: '1.5px solid currentColor', background: done[l.id] ? 'currentColor' : 'transparent' }} />)}
+                {m.skill && <span className="mono-s" style={{ display: 'block', marginTop: 2 }}>{m.skill}</span>}
+                <span aria-hidden="true" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(m.lessons.length, 24)}, minmax(0, 1fr))`, gap: 3, marginTop: 8 }}>
+                  {m.lessons.slice(0, 24).map((l) => <i key={l.id} style={{ height: 6, border: '1.5px solid currentColor', background: done[l.id] ? 'currentColor' : 'transparent' }} />)}
                 </span>
               </button>
             );
@@ -135,54 +150,87 @@ export default function Workbook({ onBack }) {
         </div>
       )}
 
-      {tab === 'practices' && (
+      {tab === 'practices' && practices.length > 0 && (
         <div role="tabpanel" className="list">
-          <p className="group-note" style={{ paddingBottom: 6 }}>Every guided practice in the workbook, ready whenever you need one.</p>
+          <p className="group-note" style={{ paddingBottom: 6 }}>Every guided practice here, ready whenever you need one.</p>
           {practices.map((l) => (
             <button key={l.id} type="button" className="item" onClick={() => setPlaying(l)}>
               <span className="n">▶</span><span className="t">{l.title}</span><span className="m">{l.mins} MIN</span>
-              <span className="d">{l.moduleName} · {l.short}{wb.practiced[l.id]?.length ? ` · ${wb.practiced[l.id].length}×` : ''}</span>
+              <span className="d">{l.moduleName}{l.short ? ` · ${l.short}` : ''}{wb.practiced[l.id]?.length ? ` · ${wb.practiced[l.id].length}×` : ''}</span>
             </button>
           ))}
         </div>
       )}
 
-      <section aria-labelledby="wbSrcH">
-        <div className="group-title"><h2 id="wbSrcH">The book</h2></div>
-        <div className="prose" style={{ paddingTop: 10, fontSize: '0.9375rem' }}>
-          <p><b>{WORKBOOK.book}</b> by {WORKBOOK.authors} ({WORKBOOK.publisher}). The structure and exercises follow the book. The wording here is written for this app, so read the book for the authors' own voice, their stories and the research behind each idea.</p>
-          <p className="soft">This is self-help, not therapy. If something here brings up more than you can hold, an affirming psychologist can work through it with you.</p>
-        </div>
-      </section>
+      {book.builtin ? (
+        <section aria-labelledby="wbSrcH">
+          <div className="group-title"><h2 id="wbSrcH">The book</h2></div>
+          <div className="prose" style={{ paddingTop: 10, fontSize: '0.9375rem' }}>
+            <p><b>{WORKBOOK.book}</b> by {WORKBOOK.authors} ({WORKBOOK.publisher}). The structure and exercises follow the book. The wording here is written for this app, so read the book for the authors' own voice, their stories and the research behind each idea.</p>
+            <p className="soft">This is self-help, not therapy. If something here brings up more than you can hold, an affirming psychologist can work through it with you.</p>
+          </div>
+        </section>
+      ) : book.source && (
+        <section aria-labelledby="wbSrcH">
+          <div className="group-title"><h2 id="wbSrcH">Source</h2></div>
+          <div className="prose" style={{ paddingTop: 10, fontSize: '0.9375rem' }}>
+            <p><b>{book.source.title}</b>{book.source.authors ? ` by ${book.source.authors}` : ''}{book.source.publisher ? ` (${book.source.publisher})` : ''}.</p>
+            {book.source.note && <p className="soft">{book.source.note}</p>}
+            <p className="soft">This pack is for your personal use. It lives only on this phone and isn't part of the app or your backups.</p>
+          </div>
+        </section>
+      )}
 
       {sheet}
     </main>
   );
 }
 
-function HelpCard() {
+function HelpCard({ help = HELP }) {
   return (
-    <section className="card stack" style={{ gap: 4 }} aria-label={HELP.title}>
-      <p className="mono-s caps">{HELP.title}</p>
-      {HELP.lines.map((l) => <p key={l} style={{ fontWeight: 600 }}>{l}</p>)}
-      <p className="mono-s mute">{HELP.note}</p>
+    <section className="card stack" style={{ gap: 4 }} aria-label={help.title}>
+      <p className="mono-s caps">{help.title}</p>
+      {help.lines.map((l) => <p key={l} style={{ fontWeight: 600 }}>{l}</p>)}
+      {help.note && <p className="mono-s mute">{help.note}</p>}
     </section>
   );
 }
 
-function Lesson({ lesson, wb, onPlay, onNext }) {
+// Body paragraphs: plain strings, or { t: 'h' | 'list' | 'ol' | 'quote' | 'note' } blocks for packs that keep the original layout.
+function Body({ body }) {
+  return (
+    <div className="prose">
+      {body.map((p, i) => {
+        if (typeof p === 'string') return <p key={i}>{p}</p>;
+        if (p.t === 'h') return <h3 key={i} className="wb-head" style={{ marginTop: 6 }}>{p.text}</h3>;
+        if (p.t === 'list' || p.t === 'ol') { const L = p.t === 'ol' ? 'ol' : 'ul'; return <L key={i} style={{ paddingLeft: 20, margin: 0 }}>{p.items.map((x, j) => <li key={j}>{x}</li>)}</L>; }
+        if (p.t === 'quote') return <blockquote key={i} style={{ margin: 0, paddingLeft: 12, borderLeft: '3px solid var(--block1)', fontStyle: 'italic' }}>{p.text}</blockquote>;
+        if (p.t === 'note') return <p key={i} className="notice">{p.text}</p>;
+        return null;
+      })}
+    </div>
+  );
+}
+
+function Lesson({ lesson, wb, book, onPlay, onNext }) {
   const done = !!wb.done[lesson.id];
   const ans = wb.ans[lesson.id] || {};
-  const isLast = ALL_LESSONS[ALL_LESSONS.length - 1].id === lesson.id;
+  const isLast = book.lessons[book.lessons.length - 1].id === lesson.id;
   const some = lesson.items && hasAnswers(lesson, ans);
   const saved = (wb.saved || {})[lesson.id];
-  const txt = () => `${WORKBOOK.title} · ${lesson.title}\n\n${answersText(lesson, ans)}`;
+  const txt = () => `${book.title} · ${lesson.title}\n\n${answersText(lesson, ans)}`;
 
   return (
     <div className="stack" style={{ gap: 20 }} data-lesson={lesson.id}>
-      {lesson.body && <div className="prose">{lesson.body.map((p, i) => <p key={i}>{p}</p>)}</div>}
+      {lesson.body && <Body body={lesson.body} />}
+      {lesson.images?.map((im, i) => (
+        <figure key={i} className="fig">
+          <img src={im.src} alt={im.alt || ''} style={{ width: '100%', height: 'auto', display: 'block' }} />
+          {im.caption && <figcaption>{im.caption}</figcaption>}
+        </figure>
+      ))}
       {lesson.fig && !lesson.figAfter && <Figure id={lesson.fig} ans={wb.ans} />}
-      {lesson.help && <HelpCard />}
+      {lesson.help && <HelpCard help={book.help || HELP} />}
 
       {lesson.steps && (
         <section className="card card-lav stack" aria-label="Guided practice">

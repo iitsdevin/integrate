@@ -451,6 +451,7 @@ export const MODULES = [
           'Thank yourself for doing this. A few more slow breaths, and come back.',
         ],
         items: [
+          { t: 'pins', k: 'map', label: 'Where I noticed things', image: 'body', tags: ['Tense', 'Tight', 'Warm', 'Heavy', 'Tingly', 'Sore', 'Numb', 'Buzzing', 'Calm'], cap: 'Tap the body wherever you noticed something, then name it underneath.' },
           chips('felt', 'What I noticed', ['Calm', 'Heavy', 'Light', 'Tense', 'Tight', 'Tingly', 'Warm', 'Restless', 'Sore', 'Soft', 'Numb', 'Tired']),
           text('where', 'Where in my body, and what helped'),
         ] }),
