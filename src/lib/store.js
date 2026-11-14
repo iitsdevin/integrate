@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS = {
   aboutMe: '', model: 'claude-sonnet-5-5',
   sit: { connect: 3, dive: 14, integrate: 3 }, // minutes of the daily sit
   voice: false, // speak each phase aloud
+  ambient: 'off', // sound under the sit: off | drone | rain | room
 };
 export const SIT_LIMITS = { connect: [1, 10], dive: [3, 45], integrate: [1, 15] };
 export function sitLengths(settings = state.settings) {
@@ -120,6 +121,9 @@ export function addSit(sit) {
   return full;
 }
 // Removing returns a function that puts back exactly what was taken, for Undo.
+export function updateSit(id, patch) {
+  setState((s) => ({ ...s, sits: s.sits.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
+}
 export function removeSit(id) {
   const sit = state.sits.find((x) => x.id === id);
   const notes = state.journal.filter((j) => j.sitId === id);

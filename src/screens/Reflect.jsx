@@ -42,7 +42,7 @@ export default function Reflect({ onBuddy }) {
     return words.every((w) => hay.includes(w));
   });
 
-  const sitMeta = (x) => [shortDate(x.at), timeOf(x.at).toUpperCase(), (x.label || 'Sit').toUpperCase(), x.minutes ? x.minutes + '′' : null, x.feel ? x.feel.toUpperCase() : null, x.rough ? 'ROUGH' : null].filter(Boolean).join(' · ');
+  const sitMeta = (x) => [shortDate(x.at), timeOf(x.at).toUpperCase(), (x.label || 'Sit').toUpperCase(), x.minutes ? x.minutes + '′' : null, x.feel || x.feelAfter ? `${(x.feel || '–').toUpperCase()}${x.feelAfter ? ' → ' + x.feelAfter.toUpperCase() : ''}` : null, x.rough ? 'ROUGH' : null].filter(Boolean).join(' · ');
 
   return (
     <main className="screen">

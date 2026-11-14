@@ -98,7 +98,7 @@ function systemPrompt() {
 }
 
 export const TOOLS = [
-  { name: 'get_practice_history', description: 'Their recorded sits: date, time, which sit, minutes, how they felt beforehand, whether they finished, and any note they wrote after.',
+  { name: 'get_practice_history', description: 'Their recorded sits: date, time, which sit, minutes, how they felt beforehand and (when they said) afterwards, whether they finished, and any note they wrote after.',
     input_schema: { type: 'object', properties: { days: { type: 'integer', description: 'How many days back to look. Default 28.' } } } },
   { name: 'get_journal', description: 'Their journal entries and weekly check-ins, newest first.',
     input_schema: { type: 'object', properties: { limit: { type: 'integer', description: 'How many entries. Default 15.' } } } },
@@ -128,7 +128,7 @@ async function runTool(name, input) {
       const days = input.days || 28;
       const sits = s.sits.filter((x) => dayDiff(localDate(new Date(x.at)), today) <= days);
       const notes = Object.fromEntries(s.journal.filter((j) => j.sitId).map((j) => [j.sitId, j.text]));
-      return { count: sits.length, sits: sits.map((x) => ({ when: new Date(x.at).toLocaleString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }), sit: x.label, minutes: x.minutes, felt: x.feel || null, body: x.bodyName || null, finished: !!x.done, rough: !!x.rough, note: notes[x.id] || null })) };
+      return { count: sits.length, sits: sits.map((x) => ({ when: new Date(x.at).toLocaleString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }), sit: x.label, minutes: x.minutes, felt: x.feel || null, feltAfter: x.feelAfter || null, body: x.bodyName || null, finished: !!x.done, rough: !!x.rough, note: notes[x.id] || null })) };
     }
     case 'get_journal': {
       const entries = [...s.journal].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, input.limit || 15);

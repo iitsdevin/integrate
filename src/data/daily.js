@@ -66,6 +66,19 @@ export const DEFAULT_PLAN = {
   source: 'default',
 };
 
+// "What do I need right now?" One state, one practice from the Toolkit (by id).
+export const NEEDS_NOW = [
+  ['Panicky or flooded', 'samurai-breath'],
+  ['Wired, can’t be still', 'grounded-swaying'],
+  ['Anxious and buzzy', 'anxiety-to-ease'],
+  ['Flat or stuck', 'playful-movement-when-feeling-stuck'],
+  ['Foggy or scattered', 'five-senses'],
+  ['The day feels like too much', 'one-step-on-the-path'],
+  ['Tense or in pain', 'pendulating-between-pain-and-ease'],
+  ['Can’t settle to sleep', 'body-scan'],
+  ['Two minutes, anywhere', 'lean-and-soften'],
+];
+
 export const WHEN_TO_PAUSE = {
   intro: 'Shorten the practice, open your eyes and move if you get any of these. Tell your psychiatrist or a therapist too.',
   items: ['Panic', 'Feeling unreal or disconnected from your body', 'Insomnia', 'Intrusive memories'],

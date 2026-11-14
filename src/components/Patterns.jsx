@@ -18,6 +18,8 @@ export function summarise(sits, checkins, now = new Date(), weeks = 8) {
   });
   const byKey = Object.fromEntries(buckets.map((b) => [b.key, b]));
   const feels = { okay: 0, wired: 0, flat: 0, foggy: 0 };
+  const after = { okay: 0, wired: 0, flat: 0, foggy: 0 };
+  const shift = { both: 0, hard: 0, eased: 0 }; // sits with a before and an after; arrived not-okay; of those, left okay
   const parts = PARTS.map(() => 0);
   let recent = 0;
   for (const s of sits) {
@@ -27,12 +29,28 @@ export function summarise(sits, checkins, now = new Date(), weeks = 8) {
     recent++;
     b.count++; b.minutes += s.minutes || 0;
     if (s.feel && feels[s.feel] !== undefined) feels[s.feel]++;
+    if (s.feelAfter && after[s.feelAfter] !== undefined) after[s.feelAfter]++;
+    if (s.feel && s.feelAfter) { shift.both++; if (s.feel !== 'okay') { shift.hard++; if (s.feelAfter === 'okay') shift.eased++; } }
     if (s.kind !== 'manual') { const h = at.getHours() < 4 ? at.getHours() + 24 : at.getHours(); const i = PARTS.findIndex(([a, z]) => h >= a && h < z); if (i >= 0) parts[i]++; }
   }
   const top = parts.indexOf(Math.max(...parts));
   const scored = Object.entries(checkins || {}).filter(([, c]) => c.at).sort((a, b) => (a[1].at < b[1].at ? -1 : 1)).slice(-10)
     .map(([k, c]) => ({ week: checkinWeek(k), at: c.at, settled: c.settled, connected: c.connected, back: !!c.back }));
-  return { buckets, feels, recent, usual: parts[top] >= 3 && parts[top] >= recent * 0.5 ? PARTS[top][2] : null, checkins: scored };
+  return { buckets, feels, after, shift, recent, usual: parts[top] >= 3 && parts[top] >= recent * 0.5 ? PARTS[top][2] : null, checkins: scored };
+}
+
+function FeelRows({ counts, max }) {
+  return (
+    <div className="feel-rows">
+      {FEEL_ROWS.map(([id, name]) => (
+        <div key={id} className="feel-row">
+          <span>{name}</span>
+          <span className="feel-track"><i style={{ width: `${(counts[id] / Math.max(1, max)) * 100}%` }} /></span>
+          <span className="mono">{counts[id]}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function WeekBars({ buckets }) {
@@ -90,6 +108,8 @@ export default function Patterns({ sits, checkins }) {
   const p = useMemo(() => summarise(sits, checkins), [sits, checkins]);
   const feelMax = Math.max(1, ...Object.values(p.feels));
   const feelTotal = Object.values(p.feels).reduce((a, b) => a + b, 0);
+  const afterTotal = Object.values(p.after).reduce((a, b) => a + b, 0);
+  const bothMax = Math.max(feelMax, ...Object.values(p.after));
   if (!sits.length) return <p className="soft">Once you have a few sits recorded, this shows what your weeks have looked like.</p>;
   return (
     <div className="stack" style={{ gap: 22 }}>
@@ -108,19 +128,22 @@ export default function Patterns({ sits, checkins }) {
         </details>
       </section>
 
-      {feelTotal > 0 && (
+      {(feelTotal > 0 || afterTotal > 0) && (
         <section className="stack" style={{ gap: 8 }} aria-labelledby="ptFeel">
           <h3 id="ptFeel" className="mono caps">How you arrived · last 8 weeks</h3>
-          <div className="feel-rows">
-            {FEEL_ROWS.map(([id, name]) => (
-              <div key={id} className="feel-row">
-                <span>{name}</span>
-                <span className="feel-track"><i style={{ width: `${(p.feels[id] / feelMax) * 100}%` }} /></span>
-                <span className="mono">{p.feels[id]}</span>
-              </div>
-            ))}
-          </div>
+          <FeelRows counts={p.feels} max={afterTotal ? bothMax : feelMax} />
           <p className="mono soft">From the check-in before a sit. Sits with no check-in are left out.</p>
+          {afterTotal > 0 && (
+            <>
+              <h3 className="mono caps" style={{ marginTop: 10 }}>How you left</h3>
+              <FeelRows counts={p.after} max={bothMax} />
+              {p.shift.hard >= 2 && (
+                <p className="soft" style={{ fontSize: '0.9375rem' }}>
+                  You arrived wired, flat or foggy for {p.shift.hard} sits where you also checked in afterwards, and left okay after {p.shift.eased} of them.
+                </p>
+              )}
+            </>
+          )}
         </section>
       )}
 

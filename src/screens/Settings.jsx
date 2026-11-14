@@ -5,6 +5,8 @@ import { useStore, updateSettings, getApiKey, setApiKey, DEFAULT_SETTINGS, lastS
 import { SCHEMES, resolveDark } from '../lib/theme.js';
 import { SOUNDS, unlockAudio, ring, preloadBells } from '../lib/bells.js';
 import { voiceSupported, speakNow, hush } from '../lib/voice.js';
+import { AMBIENT, startAmbient, stopAmbient } from '../lib/ambient.js';
+import { autoBackupSupported, useAutoBackup, chooseBackupFile, reconnectBackupFile, stopAutoBackup } from '../lib/autobackup.js';
 import { shareOrDownload, importText, daysSinceBackup } from '../lib/backup.js';
 import { storageEstimate, askPersist } from '../lib/library.js';
 import { usePacks, importPackText, removePack } from '../lib/packs.js';
@@ -24,6 +26,8 @@ export default function Settings({ open, onClose }) {
   const [about, setAbout] = useState(settings.aboutMe);
   const fileRef = useRef(null);
   const packRef = useRef(null);
+  const sample = useRef(null);
+  const auto = useAutoBackup();
   const packs = usePacks();
   const [packMsg, setPackMsg] = useState('');
   const [confirmRm, setConfirmRm] = useState(null);
@@ -89,6 +93,17 @@ export default function Settings({ open, onClose }) {
           <p className="mono soft">{settings.bell === 'silent' ? "No sound. The screen glows at each change, so you'd need to glance at it. Android phones also vibrate; iPhones don't allow that." : 'Tap one to hear it. One bell between phases, two for the last stretch, three at the end.'}</p>
         </section>
 
+        <section className="stack" aria-labelledby="ambH">
+          <h3 id="ambH" className="mono caps">Sound under the sit</h3>
+          <div className="chips">
+            {Object.entries(AMBIENT).map(([id, name]) => (
+              <button key={id} type="button" className="chip" style={{ fontSize: '0.8125rem' }} aria-pressed={(settings.ambient || 'off') === id}
+                onClick={() => { updateSettings({ ambient: id }); stopAmbient(); if (id !== 'off') { startAmbient(id); clearTimeout(sample.current); sample.current = setTimeout(() => stopAmbient(1500), 6000); } }}>{name}</button>
+            ))}
+          </div>
+          <p className="mono soft">{(settings.ambient || 'off') === 'off' ? 'Silence between the bells.' : 'Tap one to hear a few seconds. It is made on this phone, plays quietly through the sit and fades before the last bells. While it plays, your lock screen shows the phase and time left.'}</p>
+        </section>
+
         {voiceSupported() && (
           <section className="stack" aria-labelledby="voiceH">
             <h3 id="voiceH" className="mono caps">Spoken cues</h3>
@@ -134,6 +149,24 @@ export default function Settings({ open, onClose }) {
           <p className="soft" style={{ fontSize: '0.875rem' }}>{sitsCount.toLocaleString('en-AU')} {sitsCount === 1 ? 'sit' : 'sits'}. Everything lives in this browser on this phone, so back it up now and then. Backups leave out your API key and your books.</p>
           <button type="button" className="btn btn-ink" onClick={async () => { const r = await shareOrDownload(); if (r !== 'cancelled') toast(r === 'shared' ? 'Backed up' : 'Backup downloaded'); }}>Export a backup</button>
           <p className="mono-s mute">{lastBackup === null ? 'No backup yet.' : lastBackup === 0 ? 'Last backup: today.' : `Last backup: ${lastBackup} day${lastBackup === 1 ? '' : 's'} ago.`} On iPhone, choose Save to Files in the share sheet. A reminder shows on Today every three weeks.</p>
+          {autoBackupSupported() && (
+            <div className="card stack">
+              <p className="mono-s caps">Automatic backup</p>
+              {auto.status === 'off' && <>
+                <p style={{ fontSize: '0.9375rem' }}>Choose a file once and the app keeps it up to date by itself. Put it in a synced folder (Drive, OneDrive, iCloud) and it leaves this device too.</p>
+                <button type="button" className="btn btn-ink" onClick={async () => { const r = await chooseBackupFile(); if (r !== 'cancelled') toast(r === 'ok' ? 'Automatic backup is on.' : 'That file couldn’t be written. Try another place.'); }}>Choose a backup file</button>
+              </>}
+              {auto.status !== 'off' && <>
+                <p style={{ fontSize: '0.9375rem' }}><b style={{ overflowWrap: 'anywhere' }}>{auto.name}</b>{auto.status === 'ok' ? ` · kept up to date${auto.lastAt ? ', last written ' + new Date(auto.lastAt).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : ''}.` : auto.status === 'ask' ? ' · the browser needs your permission again before it can write this file.' : ' · the last write failed. The file may have been moved or deleted.'}</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {auto.status === 'ask'
+                    ? <button type="button" className="btn btn-ink" onClick={async () => { const r = await reconnectBackupFile(); if (r !== 'cancelled') toast(r === 'ok' ? 'Backup file reconnected.' : 'Still can’t write that file.'); }}>Allow again</button>
+                    : <button type="button" className="btn" onClick={async () => { const r = await chooseBackupFile(); if (r === 'ok') toast('Backup file changed.'); }}>Change file</button>}
+                  <button type="button" className="btn" onClick={async () => { await stopAutoBackup(); toast('Automatic backup is off.'); }}>Turn off</button>
+                </div>
+              </>}
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <button type="button" className="btn" onClick={() => fileRef.current?.click()}>Import a file</button>
             <button type="button" className="btn" onClick={() => setImportOpen((x) => !x)} aria-expanded={importOpen}>Paste text</button>

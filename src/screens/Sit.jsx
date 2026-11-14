@@ -4,6 +4,9 @@ import { setThemeColor } from '../lib/theme.js';
 import { Spark, Mala } from '../components/bits.jsx';
 import { useStore } from '../lib/store.js';
 import { speak, hush, cueFor } from '../lib/voice.js';
+import { startAmbient, stopAmbient, ambientPlaying, setNowPlaying } from '../lib/ambient.js';
+import { updateSit } from '../lib/store.js';
+import { FEELS } from '../data/daily.js';
 import { REST } from '../data/daily.js';
 import { total, locate, restPlan } from '../lib/sit.js';
 import { useBackLayer } from '../lib/history.js';
@@ -13,12 +16,12 @@ export const saveActive = (a) => { try { a ? localStorage.setItem(KEY, JSON.stri
 export const loadActive = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } };
 const pad = (n) => String(n).padStart(2, '0');
 
-export default function Sit({ active: initial, bell, voice = false, onEnd }) {
+export default function Sit({ active: initial, bell, voice = false, ambient = 'off', onEnd }) {
   const [active, setActive] = useState(initial);
   const [now, setNow] = useState(Date.now());
   const [wake, setWake] = useState({ ok: true, text: '' });
   const [stopArmed, setStopArmed] = useState(false);
-  const [needBell, setNeedBell] = useState(!audioUnlocked() && bell !== 'silent');
+  const [needBell, setNeedBell] = useState(!audioUnlocked() && (bell !== 'silent' || ambient !== 'off'));
   const lock = useRef(null), ended = useRef(false), activeRef = useRef(active);
   activeRef.current = active;
 
@@ -52,7 +55,6 @@ export default function Sit({ active: initial, bell, voice = false, onEnd }) {
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => hush, []); // stop speaking when the sit screen closes
 
   // Spoken cues: each phase is read aloud a moment after its bell.
   useEffect(() => {
@@ -85,6 +87,8 @@ export default function Sit({ active: initial, bell, voice = false, onEnd }) {
     const a = activeRef.current;
     const secs = Math.min((Date.now() - a.start) / 1000, total(a.phases));
     saveActive(null);
+    hush(); // stop any spoken cue
+    stopAmbient(completed ? 0 : 1200); // already faded if the sit ran its course
     if (completed) ring(bell, 3);
     onEnd({ completed, secs, active: a });
   }
@@ -113,6 +117,16 @@ export default function Sit({ active: initial, bell, voice = false, onEnd }) {
 
   const { idx, acc } = locate(active, Math.min(el, T - 0.001));
   const p = active.phases[idx];
+
+  // The sound fades out over the last few seconds so the closing bells land in quiet,
+  // and the lock screen shows the phase and the time left while it plays.
+  const fading = useRef(false);
+  const sec = Math.floor(el);
+  useEffect(() => {
+    if (!ambientPlaying()) return;
+    if (!fading.current && T - el <= 4) { fading.current = true; stopAmbient(3500); return; }
+    if (!fading.current) setNowPlaying({ phase: p.label, label: active.label, elapsed: el, total: T });
+  }, [sec, p.label]); // eslint-disable-line react-hooks/exhaustive-deps
   const left = Math.max(0, Math.ceil(acc + p.min * 60 - el));
   let run = 0;
   const fills = active.phases.map((ph) => { const len = ph.min * 60; const f = Math.max(0, Math.min(1, (el - run) / len)); run += len; return f; });
@@ -137,13 +151,14 @@ export default function Sit({ active: initial, bell, voice = false, onEnd }) {
             <Spark size={24} color="var(--sit-accent)" style={{ right: 8, top: -18 }} />
           </div>
           {p.name && <p className="mono caps" style={{ color: 'var(--sit-ink)' }}>{p.name}</p>}
+          {p.body === 'slow' && <Pacer start={active.start} now={now} />}
           <p className="sit-text">{p.text}</p>
           <p className="word sit-clock" role="timer" aria-label={`${Math.floor(left / 60)} minutes ${left % 60} seconds left in ${p.label}`}>{Math.floor(left / 60)}:{pad(left % 60)}</p>
         </div>
         <div className="stack">
           <p className={'mono' + (wake.ok ? '' : ' warn')}>{wake.text}</p>
           {needBell && (
-            <button type="button" className="btn btn-block" onClick={() => { unlockAudio(); ring(bell, 1); setNeedBell(false); }}>Turn the bells back on</button>
+            <button type="button" className="btn btn-block" onClick={() => { unlockAudio(); ring(bell, 1); startAmbient(ambient); setNeedBell(false); }}>Turn the sound back on</button>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: (!active.rough && /mantra|dive/i.test(p.label)) ? '1fr 1fr' : '1fr', gap: 10 }}>
             {!active.rough && /mantra|dive/i.test(p.label) && <button type="button" className="btn" onClick={rough}>Rough sit? Rest</button>}
@@ -157,12 +172,27 @@ export default function Sit({ active: initial, bell, voice = false, onEnd }) {
   );
 }
 
+// A shape to breathe with during long exhales: in for 4, out for 7. It follows the
+// clock rather than its own animation, so it is in the right place after a glance away.
+const IN = 4, OUT = 7;
+function Pacer({ start, now }) {
+  const t = ((now - start) / 1000) % (IN + OUT);
+  const breathingIn = t < IN;
+  return (
+    <div className="pacer" data-in={breathingIn || undefined} aria-hidden="true" style={{ '--secs': (breathingIn ? IN : OUT) + 's' }}>
+      <i />
+      <span className="mono caps">{breathingIn ? 'in' : 'out, slowly'}</span>
+    </div>
+  );
+}
+
 // After the sit. The last bell is still ringing, so this arrives quietly: first the
 // bead landing on the mala, then, a moment later, the place to write. A tap skips the wait.
 export function Done({ result, onSave }) {
   const count = useStore((s) => s.sits.length);
   const [note, setNote] = useState('');
   const [dedication, setDedication] = useState('');
+  const [after, setAfter] = useState(null); // how they feel after the sit
   const [beads, setBeads] = useState(Math.max(0, count - 1)); // one render without the new bead, so it can arrive
   const [ready, setReady] = useState(false);
   const mins = Math.max(1, Math.round(result.secs / 60));
@@ -192,6 +222,15 @@ export function Done({ result, onSave }) {
             <input id="dedicate" className="field" value={dedication} onChange={(e) => setDedication(e.target.value)} placeholder="Optional. Kept in your journal." enterKeyHint="next" />
           </div>
         )}
+        <section className="stack" style={{ gap: 8 }} aria-labelledby="afterH">
+          <h2 id="afterH" className="mono caps" style={{ fontWeight: 400 }}>How are you — now?</h2>
+          <div className="chips">
+            {FEELS.map(([id, name]) => (
+              <button key={id} type="button" className="chip" aria-pressed={after === id}
+                onClick={() => { const v = after === id ? null : id; setAfter(v); updateSit(result.sit.id, { feelAfter: v }); }}>{name}</button>
+            ))}
+          </div>
+        </section>
         <div className="stack" style={{ gap: 8 }}>
           <label htmlFor="sitnote" className="mono caps">What did you notice?</label>
           <textarea id="sitnote" className="field" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional. The time and the sit are saved for you." enterKeyHint="done" />

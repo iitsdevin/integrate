@@ -27,13 +27,20 @@ export async function shareOrDownload() {
 const DAY = 864e5;
 export function markBackedUp() { setState((s) => ({ ...s, backup: { ...(s.backup || {}), lastAt: new Date().toISOString(), snoozeUntil: null } })); }
 export function snoozeBackup(days = 7) { setState((s) => ({ ...s, backup: { ...(s.backup || {}), snoozeUntil: new Date(Date.now() + days * DAY).toISOString() } })); }
+// The automatic backup file (see autobackup.js) records its last write here, outside
+// the app state, so that writing a backup does not itself count as a change to back up.
+export const AUTO_KEY = 'bmo2.autobackup';
+function autoAt() { try { return JSON.parse(localStorage.getItem(AUTO_KEY) || 'null')?.lastAt || null; } catch { return null; } }
+// The most recent backup of either kind.
+export function lastBackupAt(s) { const a = s.backup?.lastAt || null, b = autoAt(); return a && b ? (a > b ? a : b) : a || b; }
 export function backupDue(s) {
   if (!s.sits.length && !s.journal.length) return false;
   const b = s.backup || {};
   if (b.snoozeUntil && new Date(b.snoozeUntil) > new Date()) return false;
-  return !b.lastAt || Date.now() - new Date(b.lastAt) > 21 * DAY;
+  const last = lastBackupAt(s);
+  return !last || Date.now() - new Date(last) > 21 * DAY;
 }
-export function daysSinceBackup(s) { return s.backup?.lastAt ? Math.floor((Date.now() - new Date(s.backup.lastAt)) / DAY) : null; }
+export function daysSinceBackup(s) { const last = lastBackupAt(s); return last ? Math.floor((Date.now() - new Date(last)) / DAY) : null; }
 
 const MOODS = { forest: ['moss'], dawn: ['apricot'], clay: ['apricot'], dusk: ['cobalt'], ink: ['paper', 'dark'] };
 

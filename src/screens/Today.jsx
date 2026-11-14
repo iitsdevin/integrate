@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useStore, setToday, updateSettings, localDate, timeOf, addSit, removeSit, sitLengths } from '../lib/store.js';
-import { BODY_OPTIONS, bodyOption, dailySit, badDay, secondSit, FEELS, FEEL_TEXT, WHEN_TO_PAUSE, DEFAULT_PLAN } from '../data/daily.js';
+import { BODY_OPTIONS, bodyOption, dailySit, badDay, secondSit, FEELS, FEEL_TEXT, WHEN_TO_PAUSE, DEFAULT_PLAN, NEEDS_NOW } from '../data/daily.js';
 import { planWeek, backupDue, daysSinceBackup, shareOrDownload, snoozeBackup } from '../lib/backup.js';
 import { Mala, Spark, Icon, toast } from '../components/bits.jsx';
+import { useAutoBackup, reconnectBackupFile } from '../lib/autobackup.js';
 import Sheet from '../components/Sheet.jsx';
 import PracticeSheet from '../components/PracticeSheet.jsx';
 import { allPractices, allReadings } from '../data/content.js';
@@ -18,6 +19,7 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
   const bodyId = feel === 'wired' ? 'slow' : (t.body || s.settings.body);
   const body = bodyOption(bodyId);
   const [picker, setPicker] = useState(false);
+  const auto = useAutoBackup();
   const [pause, setPause] = useState(false);
   const todays = s.sits.filter((x) => localDate(new Date(x.at)) === today);
   const plan = s.plan || DEFAULT_PLAN;
@@ -27,6 +29,8 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
   const mins = sitLengths(s.settings);
   const totalMin = mins.connect + mins.dive + mins.integrate;
   const [practice, setPractice] = useState(null);
+  const [needOpen, setNeedOpen] = useState(false);
+  const needs = useMemo(() => { const all = allPractices(); return NEEDS_NOW.map(([label, id]) => [label, all.find((x) => x.id === id)]).filter(([, x]) => x); }, []);
   const pinned = (s.pins || []).length ? allPractices().filter((x) => s.pins.includes(x.id)) : [];
 
   // Back after three or more days away: a gentler Today, with the short sit first.
@@ -43,7 +47,15 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
         <button type="button" className="btn icon-btn" onClick={onSettings} aria-label="Settings"><Icon.gear /></button>
       </header>
 
-      {backupDue(s) && (
+      {auto.status === 'ask' && (
+        <section className="card stack" style={{ boxShadow: '4px 4px 0 var(--block1)' }} aria-labelledby="abH">
+          <h2 id="abH" style={{ fontWeight: 700, fontSize: '1.0625rem', lineHeight: 1.3 }}>Your automatic backup is paused.</h2>
+          <p className="soft" style={{ fontSize: '0.875rem' }}>The browser needs your permission again before it can write to {auto.name}.</p>
+          <button type="button" className="btn btn-ink" onClick={async () => { const r = await reconnectBackupFile(); if (r !== 'cancelled') toast(r === 'ok' ? 'Backup file reconnected.' : 'Still can’t write that file. Check it in Settings.'); }}>Allow again</button>
+        </section>
+      )}
+
+      {backupDue(s) && auto.status !== 'ask' && (
         <section className="card stack" style={{ boxShadow: '4px 4px 0 var(--block1)' }} aria-labelledby="bkH">
           <p className="mono-s caps">{daysSinceBackup(s) === null ? 'No backup yet' : `Last backup ${daysSinceBackup(s)} days ago`}</p>
           <h2 id="bkH" style={{ fontWeight: 700, fontSize: '1.0625rem', lineHeight: 1.3 }}>Back up your practice. Everything lives only on this phone.</h2>
@@ -116,6 +128,11 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
         </div>
       </div>
 
+      <button type="button" className="card between" style={{ textAlign: 'left' }} onClick={() => setNeedOpen(true)}>
+        <span><span className="mono-s caps">Not a sit — something for this moment</span><span style={{ display: 'block', fontWeight: 700, fontSize: '1.0625rem', marginTop: 2 }}>What do I need right now?</span></span>
+        <Icon.arrow />
+      </button>
+
       {thread && (
         <section className="card thread" aria-labelledby="threadH">
           <h2 id="threadH" className="mono-s caps" style={{ fontWeight: 400 }}>Today’s thread · {thread.label}</h2>
@@ -145,6 +162,20 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
         </section>
       )}
       <PracticeSheet item={practice} onClose={() => setPractice(null)} onBegin={onBegin} />
+
+      <Sheet open={needOpen} onClose={() => setNeedOpen(false)} title="right now" kicker="Pick the closest. One practice, no choosing.">
+        <div className="list">
+          {needs.map(([label, x]) => (
+            <button key={x.id} type="button" className="item" onClick={() => { setNeedOpen(false); setTimeout(() => setPractice(x), 320); }}>
+              <span className="n">→</span>
+              <span className="t">{label}</span>
+              <span className="m">{x.mins || ''}</span>
+              <span className="d">{x.name}</span>
+            </button>
+          ))}
+        </div>
+        <p className="mono soft" style={{ marginTop: 14 }}>If this is panic that is not settling, or you feel unsafe, stop here and contact your psychiatrist, your therapist, or Lifeline on 13 11 14.</p>
+      </Sheet>
 
       <Sheet open={picker} onClose={() => setPicker(false)} title="connect" kicker={`Today's somatic practice · ${mins.connect} min`}>
         <div className="list">

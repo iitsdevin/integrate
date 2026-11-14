@@ -3,6 +3,7 @@ import { useStore, getState, addSit, addEntry, useSaveFailed, flush } from './li
 import { applyTheme, onSystemThemeChange } from './lib/theme.js';
 import { ring, unlockAudio, preloadBells } from './lib/bells.js';
 import { speakNow, cueFor } from './lib/voice.js';
+import { startAmbient, preloadAmbient } from './lib/ambient.js';
 import { bodyOption } from './data/daily.js';
 import { TabBar, Toaster, toast } from './components/bits.jsx';
 import Today from './screens/Today.jsx';
@@ -58,6 +59,7 @@ export default function App() {
   }, [settings.scheme, settings.mode]);
 
   useEffect(() => { preloadBells(settings.bell); }, [settings.bell]);
+  useEffect(() => { preloadAmbient(settings.ambient); }, [settings.ambient]);
 
   useEffect(() => {
     const on = () => {
@@ -98,6 +100,7 @@ export default function App() {
     // The first cue is spoken from this tap: phones only allow speech that a tap started,
     // and once it has, the later cues (which come from the timer) are allowed too.
     if (getState().settings.voice) speakNow(cueFor(plan.phases[0]));
+    startAmbient(getState().settings.ambient); // must start from this tap
     const t = getState().today;
     const a = {
       kind: plan.kind, label: plan.label, day: plan.day || 0,
@@ -121,7 +124,7 @@ export default function App() {
     setDone({ completed, secs, active: a, sit });
   }
 
-  if (active) return <Sit active={active} bell={settings.bell} voice={!!settings.voice} onEnd={end} />;
+  if (active) return <Sit active={active} bell={settings.bell} voice={!!settings.voice} ambient={settings.ambient} onEnd={end} />;
   if (done) return (
     <div className="app">
       <Done result={done} onSave={(note, dedication) => {

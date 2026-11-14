@@ -300,6 +300,19 @@ textarea.field { min-height: 140px; resize: vertical; }
 .toast button { min-height: 44px; margin: -10px -6px -10px 0; padding: 0 8px; color: var(--block2); font: inherit; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; text-decoration: underline; text-underline-offset: 3px; }
 [data-scheme][data-theme='dark'] .toast button { color: var(--block1); }
 
+/* ---------- breathing pacer ---------- */
+/* Grows for the in-breath and shrinks, more slowly, for the out-breath. Each change
+   of direction is one transition lasting exactly that breath. */
+.pacer { display: flex; align-items: center; gap: 16px; min-height: 96px; }
+.pacer i { display: block; flex: none; width: 88px; height: 88px; border: 2px solid var(--sit-word); background: color-mix(in srgb, var(--sit-word) 22%, transparent); transform: scale(0.45); transform-origin: left center; transition: transform var(--secs) cubic-bezier(0.37, 0, 0.63, 1); will-change: transform; }
+.pacer[data-in] i { transform: scale(1); }
+.pacer span { color: var(--sit-ink) !important; }
+@media (prefers-reduced-motion: reduce) {
+  /* No movement: the box brightens for in and dims for out. */
+  .pacer i { transform: none !important; opacity: 0.35; transition: opacity var(--secs) linear; }
+  .pacer[data-in] i { opacity: 1; }
+}
+
 /* ---------- after a sit ---------- */
 .done { animation: nav-fade 900ms ease backwards; }
 .done-rest { opacity: 0; transform: translateY(10px); transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out); }
