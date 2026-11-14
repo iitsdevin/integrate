@@ -194,7 +194,7 @@ export function DefuseLab() {
           ) : <p style={{ fontWeight: 700, fontSize: mode === 'voice' ? '1.4rem' : '1.15rem', lineHeight: 1.35, overflowWrap: 'anywhere' }}>{m[2](t, name)}</p>}
       </div>
       <label className="slider"><span>And now?</span><input type="range" min="0" max="10" value={grip.after} onChange={(e) => setGrip({ ...grip, after: +e.target.value })} /><output>{grip.after}</output></label>
-      {t.trim() && <p className="mono soft">{grip.after < grip.before ? `It loosened by ${grip.before - grip.after}. Try the same move next time it shows up.` : 'No change is fine. Try another technique, or come back to it later.'}</p>}
+      {t.trim() && <p className="hint">{grip.after < grip.before ? `It loosened by ${grip.before - grip.after}. Try the same move next time it shows up.` : 'No change is fine. Try another technique, or come back to it later.'}</p>}
     </section>
   );
 }

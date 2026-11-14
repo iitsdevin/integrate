@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export function Spark({ size = 20, style, color = 'currentColor' }) {
   return (
@@ -46,16 +46,51 @@ export function Mala({ count, full = false }) {
       <svg className="mala" viewBox="0 0 80 80" role="img" aria-label={`Mala of 108 beads, ${lit} filled${round ? `, round ${round + 1}` : ''}`}>{beads}</svg>
       <div className="stack" style={{ gap: 4, minWidth: 0 }}>
         <p className="word count">{String(lit).padStart(3, '0')}<span>/108</span></p>
-        <p className="mono soft">{round ? `round ${round + 1}. ` : ''}one bead per sit. missed days leave no gap — just come back.</p>
+        <p className="hint">{round ? `Round ${round + 1}. ` : ''}One bead per sit. Missed days leave no gap; just come back.</p>
       </div>
+    </div>
+  );
+}
+
+// A slim bar that appears once a long page has scrolled past its heading, so the page
+// name and the way back are always within reach.
+export function PageBar({ title, onBack }) {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const check = () => setOn(window.scrollY > 150);
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    return () => window.removeEventListener('scroll', check);
+  }, []);
+  return (
+    <div className="pagebar" data-on={on || undefined} inert={!on}>
+      <button type="button" className="btn icon-btn" onClick={onBack} aria-label="Back"><Icon.back /></button>
+      <span className="word">{title}</span>
     </div>
   );
 }
 
 export function TabBar({ tab, onTab }) {
   const tabs = [['today', 'TODAY'], ['toolkit', 'TOOLKIT'], ['reflect', 'REFLECT']];
+  const nav = useRef(null);
+  const [mark, setMark] = useState(null); // where the lime marker sits: { x, w }
+  // The marker is one element that travels to the chosen tab, rather than a
+  // highlight that vanishes from one label and appears on another.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = nav.current?.querySelector('[aria-current="page"] span');
+      if (!el) return;
+      const a = nav.current.getBoundingClientRect(), b = el.getBoundingClientRect();
+      setMark({ x: b.left - a.left, w: b.width });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    document.fonts?.ready?.then(measure).catch(() => {});
+    return () => window.removeEventListener('resize', measure);
+  }, [tab]);
   return (
-    <nav className="tabbar" aria-label="Sections">
+    <nav ref={nav} className="tabbar" aria-label="Sections">
+      {mark && <i className="tab-mark" aria-hidden="true" style={{ transform: `translateX(${mark.x}px)`, width: mark.w }} />}
       {tabs.map(([id, label]) => (
         <button key={id} type="button" aria-current={tab === id ? 'page' : undefined} onClick={() => onTab(id)}>
           <span>{label}</span>

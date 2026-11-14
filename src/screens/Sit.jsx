@@ -39,9 +39,9 @@ export default function Sit({ active: initial, bell, voice = false, ambient = 'o
       try {
         if (!navigator.wakeLock) throw new Error('none');
         lock.current = await navigator.wakeLock.request('screen');
-        if (!cancelled) setWake({ ok: true, text: 'screen stays on — keep this page open' });
+        if (!cancelled) setWake({ ok: true, text: 'The screen stays on. Keep this page open.' });
       } catch {
-        if (!cancelled) setWake({ ok: false, text: "this phone won't let the page keep its screen on. turn off auto-lock" + (bell === 'silent' ? '.' : " or the bells won't ring.") });
+        if (!cancelled) setWake({ ok: false, text: "This phone won't let the page keep its screen on. Turn off auto-lock" + (bell === 'silent' ? '.' : " or the bells won't ring.") });
       }
     };
     request();
@@ -118,6 +118,20 @@ export default function Sit({ active: initial, bell, voice = false, ambient = 'o
   const { idx, acc } = locate(active, Math.min(el, T - 0.001));
   const p = active.phases[idx];
 
+  // Resting state: left alone for a while, everything but the thin progress strip
+  // fades away, so there is no clock to watch. A tap, or a change of phase, brings
+  // it back for a few seconds. It stays up while something needs to be seen.
+  const [awake, setAwake] = useState(true);
+  const [wakeKey, setWakeKey] = useState(0);
+  const stir = () => { setAwake(true); setWakeKey((k) => k + 1); };
+  const mustShow = needBell || stopArmed || !wake.ok || p.body === 'slow';
+  useEffect(() => {
+    if (mustShow) { setAwake(true); return undefined; }
+    const id = setTimeout(() => setAwake(false), 10000);
+    return () => clearTimeout(id);
+  }, [wakeKey, mustShow, idx]);
+  useEffect(() => { setAwake(true); }, [idx]);
+
   // The sound fades out over the last few seconds so the closing bells land in quiet,
   // and the lock screen shows the phase and the time left while it plays.
   const fading = useRef(false);
@@ -132,7 +146,7 @@ export default function Sit({ active: initial, bell, voice = false, ambient = 'o
   const fills = active.phases.map((ph) => { const len = ph.min * 60; const f = Math.max(0, Math.min(1, (el - run) / len)); run += len; return f; });
 
   return (
-    <section className="sit" aria-label="Sit in progress">
+    <section className={'sit' + (awake ? '' : ' resting')} aria-label="Sit in progress" onPointerDown={stir} onKeyDown={stir} onFocus={stir}>
       <div className="sit-in">
         <div className="sit-strip" aria-hidden="true">
           {active.phases.map((ph, i) => (
@@ -145,7 +159,8 @@ export default function Sit({ active: initial, bell, voice = false, ambient = 'o
           <span>{pad(idx + 1)}/{pad(active.phases.length)}</span>
           <span>{active.label}</span>
         </div>
-        <div className="sit-mid">
+        {/* Keyed by phase: the new phase fades in on the same frame as its bell. */}
+        <div className="sit-mid phase-in" key={idx + (active.rough ? 'r' : '')}>
           <div style={{ position: 'relative' }}>
             <h2 className="word sit-name" aria-live="polite" style={{ '--fit': (1.1 / (0.41 * Math.max(4, p.label.length))).toFixed(3) }}>{p.label.toLowerCase()}</h2>
             <Spark size={24} color="var(--sit-accent)" style={{ right: 8, top: -18 }} />
@@ -156,7 +171,7 @@ export default function Sit({ active: initial, bell, voice = false, ambient = 'o
           <p className="word sit-clock" role="timer" aria-label={`${Math.floor(left / 60)} minutes ${left % 60} seconds left in ${p.label}`}>{Math.floor(left / 60)}:{pad(left % 60)}</p>
         </div>
         <div className="stack">
-          <p className={'mono' + (wake.ok ? '' : ' warn')}>{wake.text}</p>
+          <p className={'hint' + (wake.ok ? '' : ' warn')}>{wake.text}</p>
           {needBell && (
             <button type="button" className="btn btn-block" onClick={() => { unlockAudio(); ring(bell, 1); startAmbient(ambient); setNeedBell(false); }}>Turn the sound back on</button>
           )}
@@ -207,8 +222,17 @@ export function Done({ result, onSave }) {
 
   const save = () => onSave(note.trim(), round && dedication.trim() ? `Round ${round} of the mala, 108 sits. Dedicated to ${dedication.trim()}` : '');
 
+  // Stay in the dark of the sit: eyes that have been closed for twenty minutes should
+  // not open onto a bright page. The app returns to its own colours on Done.
+  useEffect(() => {
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--sit-bg').trim();
+    if (bg) setThemeColor(bg);
+    return () => window.dispatchEvent(new Event('bmo:theme'));
+  }, []);
+
   return (
-    <main className={'screen done' + (round ? ' done-round' : '')} style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 40px)' }} onPointerDown={() => { setBeads(count); setReady(true); }}>
+    <main className={'sit done' + (round ? ' done-round' : '')} onPointerDown={() => { setBeads(count); setReady(true); }}>
+      <div className="sit-in" style={{ gap: 20, paddingTop: 20 }}>
       <p className="mono caps">{round ? `Round ${round} complete · 108 sits` : result.completed ? result.active.label + ' · ' + mins + ' min' : 'That counts · ' + mins + ' min'}</p>
       {round
         ? <h1 className="word title-xl" style={{ fontSize: 'clamp(4.5rem, 22vw, 6rem)' }}>one<br /><span className="deep">hundred</span><br />& eight.</h1>
@@ -238,6 +262,7 @@ export function Done({ result, onSave }) {
         <button type="button" className="btn btn-ink btn-shadow btn-block begin" onClick={save}>
           <span>Done</span><span className="mono">→</span>
         </button>
+      </div>
       </div>
     </main>
   );

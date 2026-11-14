@@ -4,7 +4,7 @@ import { useStore, setCheck, localDate } from '../lib/store.js';
 import { kriyaSit } from '../data/daily.js';
 import PracticeSheet from '../components/PracticeSheet.jsx';
 import { listBooks, onLibraryChange } from '../lib/library.js';
-import { Spark, Icon, PracticeBody } from '../components/bits.jsx';
+import { Spark, Icon, PracticeBody, PageBar } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 import Course from './Course.jsx';
 import { COURSE } from '../data/course.js';
@@ -12,13 +12,32 @@ import Workbook from './Workbook.jsx';
 import { WORKBOOK } from '../data/workbook.js';
 import { usePacks, packsLoaded } from '../lib/packs.js';
 
+// A category opens out of its tile, and closes back into it: the tile's name and the
+// page's big title are treated as one element that moves and grows between the two
+// places (the browser's View Transitions). Where that is unsupported, or motion is
+// reduced, the page simply slides as before.
+let lastCat = null; // the tile to return into
+function morph(change) {
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (typeof document.startViewTransition !== 'function' || still) { change(); return; }
+  const root = document.documentElement;
+  root.dataset.vt = '1';
+  const t = document.startViewTransition(() => new Promise((done) => {
+    const settle = () => requestAnimationFrame(() => requestAnimationFrame(done));
+    window.addEventListener('hashchange', settle, { once: true });
+    setTimeout(done, 400); // never leave the page frozen if nothing changed
+    change();
+  }));
+  t.finished.finally(() => { delete root.dataset.vt; });
+}
+
 export default function Toolkit({ view, onView, onBegin, onAskBook }) {
   if (view === 'library') return null; // rendered by Library.jsx
   if (view === COURSE.id) return <Course onBack={() => onView(null)} onBegin={onBegin} />;
   if (view === WORKBOOK.id) return <Workbook onBack={() => onView(null)} />;
   if (view?.startsWith('pack-')) return <PackView view={view} onView={onView} />;
   const cat = view && findCategory(view);
-  if (cat) return <Category cat={cat} onBack={() => onView(null)} onBegin={onBegin} onAskBook={onAskBook} />;
+  if (cat) return <Category cat={cat} onBack={() => { lastCat = cat.id; morph(() => onView(null)); }} onBegin={onBegin} onAskBook={onAskBook} />;
   return <Grid onView={onView} onBegin={onBegin} />;
 }
 
@@ -67,9 +86,10 @@ function Grid({ onView, onBegin }) {
   const tile = (c, i, col) => {
     const tall = (col === 0 ? i % 2 === 0 : i % 2 === 1);
     return (
-      <button key={c.id} type="button" className={`tile ${c.tile}${tall ? ' tall' : ''}`} onClick={() => onView(c.id)}>
+      <button key={c.id} type="button" className={`tile ${c.tile}${tall ? ' tall' : ''}`}
+        onClick={(e) => { const b = e.currentTarget.querySelector('b'); if (b) b.style.viewTransitionName = 'cat-title'; lastCat = c.id; morph(() => onView(c.id)); }}>
         <span className="mono-s caps">{c.no}{c.tag ? ' — ' + c.tag : ''}</span>
-        <span><b>{c.name}</b><span className="h mono-s">{c.hint}</span></span>
+        <span><b style={lastCat === c.id ? { viewTransitionName: 'cat-title' } : undefined}>{c.name}</b><span className="h mono-s">{c.hint}</span></span>
       </button>
     );
   };
@@ -165,9 +185,10 @@ function Category({ cat, onBack, onBegin, onAskBook }) {
   return (
     <main className="screen">
       <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={onBack}><Icon.back /> Toolkit</button>
+      <PageBar title={cat.name.toLowerCase()} onBack={onBack} />
       <header style={{ position: 'relative', minHeight: 100 }}>
         <div aria-hidden="true" style={{ position: 'absolute', left: 64, top: 28, width: 'min(190px, 55%)', height: 64, background: cat.tile === 'lavender' ? 'var(--block1)' : 'var(--block3)' }} />
-        <h1 className="word" style={{ position: 'relative', fontSize: cat.name.length > 10 ? '4.2rem' : '6.4rem', overflowWrap: 'anywhere' }}>{cat.name.toLowerCase()}</h1>
+        <h1 className="word" style={{ position: 'relative', fontSize: cat.name.length > 10 ? '4.2rem' : '6.4rem', overflowWrap: 'anywhere', viewTransitionName: 'cat-title', width: 'fit-content', maxWidth: '100%' }}>{cat.name.toLowerCase()}</h1>
         <p className="mono-s caps" style={{ position: 'relative', marginTop: 8 }}>{cat.no} — {cat.blurb}</p>
       </header>
 
@@ -268,7 +289,7 @@ function Category({ cat, onBack, onBegin, onAskBook }) {
             <div className="stack" style={{ marginTop: 18 }}>
               {bookFor(open.item)
                 ? <button type="button" className="btn btn-ink btn-block" onClick={() => { const bk = bookFor(open.item); setOpen(null); onAskBook(bk.id); }}>Ask this book a question</button>
-                : <p className="mono soft">Add this book to Your library to ask it questions.</p>}
+                : <p className="hint">Add this book to Your library to ask it questions.</p>}
             </div>
           </>
         )}

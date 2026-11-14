@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { COURSE, MODULES, ALL_LESSONS, NEEDS } from '../data/course.js';
 import { useStore, addEntry, shortDate } from '../lib/store.js';
-import { Icon, Spark, toast } from '../components/bits.jsx';
+import { Icon, Spark, toast, PageBar } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 import { useBackLayer } from '../lib/history.js';
 import { courseState, setCourse, Worksheet, Check, Hexaflex, CardSort, Bullseye, DefuseLab, StepDown, Player } from '../components/CourseTools.jsx';
@@ -54,6 +54,7 @@ export default function Course({ onBack }) {
     return (
       <main className="screen">
         <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setMod(null)}><Icon.back /> ACT for ADHD</button>
+        <PageBar title={module.name.toLowerCase()} onBack={() => setMod(null)} />
         <header className="stack" style={{ gap: 8 }}>
           <p className="mono caps">Module {module.no} · {module.skill}</p>
           <h1 className="word" style={{ fontSize: 'clamp(3.4rem, 17vw, 4.6rem)', overflowWrap: 'anywhere' }}>{module.name.toLowerCase()}</h1>
@@ -79,6 +80,7 @@ export default function Course({ onBack }) {
   return (
     <main className="screen">
       <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={onBack}><Icon.back /> Toolkit</button>
+      <PageBar title="act for adhd" onBack={onBack} />
       <header style={{ position: 'relative' }}>
         <p className="mono caps">09 — course · {COURSE.tagline.toLowerCase()}</p>
         <div style={{ position: 'relative', marginTop: 6 }}>

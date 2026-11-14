@@ -7,6 +7,7 @@ import { useBackLayer } from '../lib/history.js';
 // from wherever the sheet is, so a release mid-drag carries on from the finger's
 // position — and at the finger's speed: the release curve starts at the gesture's
 // velocity (see settle()).
+let behind = 0; // how many sheets are open
 const rubberband = (over, dim, c = 0.55) => (over * dim * c) / (dim + c * Math.abs(over));
 
 export default function Sheet({ open, onClose, title, kicker, children, footer, tall = false, label }) {
@@ -49,6 +50,16 @@ export default function Sheet({ open, onClose, title, kicker, children, footer, 
 
   useEffect(() => {
     if (shown) panel.current?.focus({ preventScroll: true });
+  }, [shown]);
+
+  // Depth: while a sheet is up, the page behind steps back a little, scaling about
+  // the middle of what is on screen. It returns as the sheet leaves.
+  useEffect(() => {
+    if (!shown) return undefined;
+    const root = document.documentElement;
+    root.style.setProperty('--behind-y', `${window.scrollY + window.innerHeight / 2}px`);
+    behind += 1; root.dataset.sheet = String(behind);
+    return () => { behind -= 1; if (behind <= 0) { behind = 0; delete root.dataset.sheet; } else root.dataset.sheet = String(behind); };
   }, [shown]);
 
   // Escape still closes when focus has fallen out of the sheet (e.g. the focused button was removed).

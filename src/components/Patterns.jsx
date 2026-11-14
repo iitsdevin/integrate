@@ -132,7 +132,7 @@ export default function Patterns({ sits, checkins }) {
         <section className="stack" style={{ gap: 8 }} aria-labelledby="ptFeel">
           <h3 id="ptFeel" className="mono caps">How you arrived · last 8 weeks</h3>
           <FeelRows counts={p.feels} max={afterTotal ? bothMax : feelMax} />
-          <p className="mono soft">From the check-in before a sit. Sits with no check-in are left out.</p>
+          <p className="hint">From the check-in before a sit. Sits with no check-in are left out.</p>
           {afterTotal > 0 && (
             <>
               <h3 className="mono caps" style={{ marginTop: 10 }}>How you left</h3>

@@ -55,36 +55,9 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
         </section>
       )}
 
-      {backupDue(s) && auto.status !== 'ask' && (
-        <section className="card stack" style={{ boxShadow: '4px 4px 0 var(--block1)' }} aria-labelledby="bkH">
-          <p className="mono-s caps">{daysSinceBackup(s) === null ? 'No backup yet' : `Last backup ${daysSinceBackup(s)} days ago`}</p>
-          <h2 id="bkH" style={{ fontWeight: 700, fontSize: '1.0625rem', lineHeight: 1.3 }}>Back up your practice. Everything lives only on this phone.</h2>
-          <p className="soft" style={{ fontSize: '0.875rem' }}>Opens the share sheet. Tap <b>Save to Files</b>, then pick iCloud Drive or Google Drive.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
-            <button type="button" className="btn btn-ink" onClick={async () => { const r = await shareOrDownload(); if (r !== 'cancelled') toast('Backed up. Next reminder in three weeks.'); }}>Back up now</button>
-            <button type="button" className="btn" onClick={() => { snoozeBackup(7); toast('I’ll remind you next week.'); }}>Later</button>
-          </div>
-        </section>
-      )}
-
-      {planDone && (
-        <section className="card card-lime stack" style={{ border: '2px solid var(--ink)' }} aria-labelledby="doneH">
-          <p className="mono-s caps">{plan.title} · finished {new Date(plan.to + 'T12:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</p>
-          <h2 id="doneH" style={{ fontWeight: 700, fontSize: '1.125rem', lineHeight: 1.25 }}>Time to decide what to keep. Your buddy can look back over it with you and draft what comes next.</h2>
-          <button type="button" className="btn btn-ink" onClick={() => onBuddy('My plan has finished. Look back over how it went and help me decide what to keep for the next stretch.')}>Review it with my buddy</button>
-        </section>
-      )}
-
-      {returning && (
-        <section className="card card-lav stack" aria-labelledby="backH">
-          <h2 id="backH" className="word" style={{ fontSize: '2rem' }}>Good to see you.</h2>
-          <p style={{ fontSize: '1.0625rem', lineHeight: 1.4 }}>Nothing to catch up on. Three minutes counts, and it is here if that is what today has room for.</p>
-        </section>
-      )}
-
       {!todays.length && (
         <section className="stack" style={{ gap: 8 }} aria-labelledby="feelH">
-          <h2 id="feelH" className="mono caps" style={{ fontWeight: 400 }}>How are you — right now?</h2>
+          <h2 id="feelH" className="mono caps" style={{ fontWeight: 400 }}>{returning ? 'Good to see you. How are you — right now?' : 'How are you — right now?'}</h2>
           <div className="chips">
             {FEELS.map(([id, name]) => (
               <button key={id} type="button" className="chip" aria-pressed={feel === id} onClick={() => setToday({ feel: feel === id ? null : id })}>{name}</button>
@@ -119,7 +92,8 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
             <span>{todays.length ? 'Sit again' : 'Begin'}</span><span className="mono">{totalMin}:00</span>
           </button>
         )}
-        {todays.length > 0 && <p className="mono" role="status">You sat today at {timeOf(todays[todays.length - 1].at)}. That's the day's sit done.</p>}
+        {returning && <p className="hint">Nothing to catch up on. Three minutes counts, and it is here if that is what today has room for.</p>}
+        {todays.length > 0 && <p className="hint" role="status">You sat today at {timeOf(todays[todays.length - 1].at)}. That's the day's sit done.</p>}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {returning
             ? <button type="button" className="btn btn-tight" onClick={() => onBegin(dailySit(bodyId, mins))}>Full sit · {totalMin}′</button>
@@ -128,16 +102,11 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
         </div>
       </div>
 
-      <button type="button" className="card between" style={{ textAlign: 'left' }} onClick={() => setNeedOpen(true)}>
-        <span><span className="mono-s caps">Not a sit — something for this moment</span><span style={{ display: 'block', fontWeight: 700, fontSize: '1.0625rem', marginTop: 2 }}>What do I need right now?</span></span>
-        <Icon.arrow />
-      </button>
-
-      {thread && (
-        <section className="card thread" aria-labelledby="threadH">
-          <h2 id="threadH" className="mono-s caps" style={{ fontWeight: 400 }}>Today’s thread · {thread.label}</h2>
-          <p style={{ fontSize: '1.0625rem', lineHeight: 1.45, whiteSpace: thread.kind === 'journal' ? 'pre-wrap' : undefined }}>{thread.kind === 'journal' ? `“${thread.text}”` : thread.text}</p>
-          {thread.view && <button type="button" className="link-btn" onClick={() => { location.hash = '#toolkit/' + thread.view; }}>Find it in the toolkit <Icon.arrow /></button>}
+      {planDone && (
+        <section className="card card-lime stack" style={{ border: '2px solid var(--ink)' }} aria-labelledby="doneH">
+          <p className="mono-s caps">{plan.title} · finished {new Date(plan.to + 'T12:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</p>
+          <h2 id="doneH" style={{ fontWeight: 700, fontSize: '1.125rem', lineHeight: 1.25 }}>Time to decide what to keep. Your buddy can look back over it with you and draft what comes next.</h2>
+          <button type="button" className="btn btn-ink" onClick={() => onBuddy('My plan has finished. Look back over how it went and help me decide what to keep for the next stretch.')}>Review it with my buddy</button>
         </section>
       )}
 
@@ -153,14 +122,40 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
         <button type="button" className="link-btn" onClick={() => setPause(true)}>When to pause</button>
       </div>
 
-      {pinned.length > 0 && (
-        <section className="stack" style={{ gap: 8 }} aria-labelledby="pinH">
-          <h2 id="pinH" className="mono caps" style={{ fontWeight: 400 }}>Pinned from your toolkit</h2>
-          <div className="wb-chips">
+      {/* One level down from the sit: things for this moment, then something to read. */}
+      <section className="stack" style={{ gap: 10 }} aria-labelledby="momentH">
+        <h2 id="momentH" className="mono caps" style={{ fontWeight: 400 }}>For this moment</h2>
+        <button type="button" className="card between" style={{ textAlign: 'left' }} onClick={() => setNeedOpen(true)}>
+          <span style={{ fontWeight: 700, fontSize: '1.0625rem' }}>What do I need right now?</span>
+          <Icon.arrow />
+        </button>
+        {pinned.length > 0 && (
+          <div className="wb-chips" role="group" aria-label="Pinned from your toolkit">
             {pinned.map((x) => <button key={x.id} type="button" className="chip" onClick={() => setPractice(x)}>{x.name}</button>)}
+          </div>
+        )}
+      </section>
+
+      {thread && (
+        <section className="card thread" aria-labelledby="threadH">
+          <h2 id="threadH" className="mono-s caps" style={{ fontWeight: 400 }}>Today’s thread · {thread.label}</h2>
+          <p style={{ fontSize: '1.0625rem', lineHeight: 1.45, whiteSpace: thread.kind === 'journal' ? 'pre-wrap' : undefined }}>{thread.kind === 'journal' ? `“${thread.text}”` : thread.text}</p>
+          {thread.view && <button type="button" className="link-btn" onClick={() => { location.hash = '#toolkit/' + thread.view; }}>Find it in the toolkit <Icon.arrow /></button>}
+        </section>
+      )}
+
+      {backupDue(s) && auto.status !== 'ask' && (
+        <section className="card stack" style={{ boxShadow: '4px 4px 0 var(--block1)' }} aria-labelledby="bkH">
+          <p className="mono-s caps">{daysSinceBackup(s) === null ? 'No backup yet' : `Last backup ${daysSinceBackup(s)} days ago`}</p>
+          <h2 id="bkH" style={{ fontWeight: 700, fontSize: '1.0625rem', lineHeight: 1.3 }}>Back up your practice. Everything lives only on this phone.</h2>
+          <p className="soft" style={{ fontSize: '0.875rem' }}>Opens the share sheet. Tap <b>Save to Files</b>, then pick iCloud Drive or Google Drive.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
+            <button type="button" className="btn btn-ink" onClick={async () => { const r = await shareOrDownload(); if (r !== 'cancelled') toast('Backed up. Next reminder in three weeks.'); }}>Back up now</button>
+            <button type="button" className="btn" onClick={() => { snoozeBackup(7); toast('I’ll remind you next week.'); }}>Later</button>
           </div>
         </section>
       )}
+
       <PracticeSheet item={practice} onClose={() => setPractice(null)} onBegin={onBegin} />
 
       <Sheet open={needOpen} onClose={() => setNeedOpen(false)} title="right now" kicker="Pick the closest. One practice, no choosing.">
@@ -174,7 +169,7 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
             </button>
           ))}
         </div>
-        <p className="mono soft" style={{ marginTop: 14 }}>If this is panic that is not settling, or you feel unsafe, stop here and contact your psychiatrist, your therapist, or Lifeline on 13 11 14.</p>
+        <p className="hint" style={{ marginTop: 14 }}>If this is panic that is not settling, or you feel unsafe, stop here and contact your psychiatrist, your therapist, or Lifeline on 13 11 14.</p>
       </Sheet>
 
       <Sheet open={picker} onClose={() => setPicker(false)} title="connect" kicker={`Today's somatic practice · ${mins.connect} min`}>
@@ -193,7 +188,7 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
           onClick={() => { updateSettings({ body: bodyId }); toast(body.name + ' is now your usual.'); }}>
           Make {body.name} my usual
         </button>
-        <p className="mono soft" style={{ marginTop: 12 }}>More somatic practices live in Toolkit › Somatic.</p>
+        <p className="hint" style={{ marginTop: 12 }}>More somatic practices live in Toolkit › Somatic.</p>
       </Sheet>
 
       <Sheet open={pause} onClose={() => setPause(false)} title="when to pause">

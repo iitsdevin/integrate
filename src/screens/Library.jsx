@@ -4,7 +4,7 @@ import { askLibrary, BuddyError } from '../lib/buddy.js';
 import { getApiKey } from '../lib/store.js';
 import { usePacks } from '../lib/packs.js';
 import Markdown from '../components/Markdown.jsx';
-import { Icon, toast } from '../components/bits.jsx';
+import { Icon, toast, PageBar } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 
 export default function Library({ onBack, focusBook, onSettings }) {
@@ -61,6 +61,7 @@ export default function Library({ onBack, focusBook, onSettings }) {
   return (
     <main className="screen">
       <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={onBack}><Icon.back /> Toolkit</button>
+      <PageBar title="library" onBack={onBack} />
       <header>
         <p className="mono caps">{no} — kept on this phone, never uploaded</p>
         <h1 className="word" style={{ fontSize: 'clamp(4.4rem, 23vw, 6rem)', marginTop: 6 }}>library</h1>
@@ -135,7 +136,7 @@ export default function Library({ onBack, focusBook, onSettings }) {
             <input id="bt" className="field" value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} />
             <label className="mono caps" htmlFor="ba">Author</label>
             <input id="ba" className="field" value={edit.author} onChange={(e) => setEdit({ ...edit, author: e.target.value })} />
-            <p className="mono soft">From {edit.file}. {edit.passages} passages.</p>
+            <p className="hint">From {edit.file}. {edit.passages} passages.</p>
             <button type="button" className="btn btn-ink btn-block" onClick={async () => { await renameBook(edit.id, { title: edit.title.trim() || edit.file, author: edit.author.trim() }); setEdit(null); }}>Save</button>
             <button type="button" className="btn btn-block" onClick={() => { setBookId(edit.id); setEdit(null); setTimeout(() => qRef.current?.focus(), 450); }}>Ask this book</button>
             <button type="button" className="btn btn-block" onClick={async () => { if (!confirmDel) { setConfirmDel(true); return; } await deleteBook(edit.id); if (bookId === edit.id) setBookId(''); setEdit(null); setConfirmDel(false); }}>

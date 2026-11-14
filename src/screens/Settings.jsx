@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Sheet from '../components/Sheet.jsx';
-import { toast } from '../components/bits.jsx';
+import { toast, Icon } from '../components/bits.jsx';
+import { useBackLayer } from '../lib/history.js';
 import { useStore, updateSettings, getApiKey, setApiKey, DEFAULT_SETTINGS, lastSaveFailed, sitLengths, SIT_LIMITS } from '../lib/store.js';
 import { SCHEMES, resolveDark } from '../lib/theme.js';
 import { SOUNDS, unlockAudio, ring, preloadBells } from '../lib/bells.js';
@@ -13,7 +14,10 @@ import { usePacks, importPackText, removePack } from '../lib/packs.js';
 
 const MODELS = [['claude-sonnet-5-5', 'Claude Sonnet 5.5 — quick, the default'], ['claude-opus-5-5', 'Claude Opus 5.5 — more thorough, costs more'], ['claude-haiku-5-5', 'Claude Haiku 5.5 — fastest, cheapest']];
 
-export default function Settings({ open, onClose }) {
+const PAGES = [['look', 'Look', 'Colour scheme, light or dark'], ['sit', 'The sit', 'Lengths, bell, sound, spoken cues'], ['buddy', 'Buddy', 'About you, API key, model'], ['data', 'Your data', 'Backups, import, private packs']];
+
+// Four short pages rather than one long scroll. `start` opens straight on a page.
+export default function Settings({ open, onClose, start = null }) {
   const settings = useStore((s) => s.settings);
   const sitsCount = useStore((s) => s.sits.length);
   const lastBackup = useStore((s) => daysSinceBackup(s));
@@ -27,6 +31,10 @@ export default function Settings({ open, onClose }) {
   const fileRef = useRef(null);
   const packRef = useRef(null);
   const sample = useRef(null);
+  const [page, setPage] = useState(start);
+  useEffect(() => { if (open) setPage(start); }, [open, start]);
+  useBackLayer(open && !!page, () => setPage(null)); // Back returns to the list before it closes the sheet
+  const here = PAGES.find(([id]) => id === page);
   const auto = useAutoBackup();
   const packs = usePacks();
   const [packMsg, setPackMsg] = useState('');
@@ -46,8 +54,22 @@ export default function Settings({ open, onClose }) {
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="settings" kicker="Saved on this phone">
-      <div className="stack" style={{ gap: 26 }}>
+    <Sheet open={open} onClose={onClose} title={here ? here[1].toLowerCase() : 'settings'} kicker={here ? 'Settings' : 'Saved on this phone'}>
+      <div key={page || 'menu'} className="stack settings-page" style={{ gap: 26 }}>
+        {page && <button type="button" className="link-btn" style={{ alignSelf: 'flex-start', marginBottom: -14 }} onClick={() => setPage(null)}><Icon.back /> Settings</button>}
+        {!page && (
+          <nav className="list" aria-label="Settings">
+            {PAGES.map(([id, name, sub], i) => (
+              <button key={id} type="button" className="item" onClick={() => setPage(id)}>
+                <span className="n">{String(i + 1).padStart(2, '0')}</span>
+                <span className="t">{name}</span>
+                <span className="m">→</span>
+                <span className="d">{id === 'data' && lastSaveFailed() ? 'This browser isn’t saving. Export a backup.' : sub}</span>
+              </button>
+            ))}
+          </nav>
+        )}
+        {page === 'look' && <>
         <section className="stack" aria-labelledby="schemeH">
           <h3 id="schemeH" className="mono caps">Colour scheme</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
@@ -68,6 +90,8 @@ export default function Settings({ open, onClose }) {
             ))}
           </div>
         </section>
+        </>}
+        {page === 'sit' && <>
 
         <section className="stack" aria-labelledby="lenH">
           <h3 id="lenH" className="mono caps">Daily sit · {mins.connect + mins.dive + mins.integrate} minutes</h3>
@@ -79,7 +103,7 @@ export default function Settings({ open, onClose }) {
               <button type="button" className="btn icon-btn" aria-label={`${name}: one minute more`} disabled={mins[k] >= SIT_LIMITS[k][1]} onClick={() => updateSettings({ sit: { ...mins, [k]: mins[k] + 1 } })}>+</button>
             </div>
           ))}
-          <p className="mono soft">A plan drafted with your buddy can set these too.</p>
+          <p className="hint">A plan drafted with your buddy can set these too.</p>
         </section>
 
         <section className="stack" aria-labelledby="bellH">
@@ -90,7 +114,7 @@ export default function Settings({ open, onClose }) {
                 onClick={() => { updateSettings({ bell: id }); unlockAudio(); preloadBells(id); ring(id, 1); }}>{name}</button>
             ))}
           </div>
-          <p className="mono soft">{settings.bell === 'silent' ? "No sound. The screen glows at each change, so you'd need to glance at it. Android phones also vibrate; iPhones don't allow that." : 'Tap one to hear it. One bell between phases, two for the last stretch, three at the end.'}</p>
+          <p className="hint">{settings.bell === 'silent' ? "No sound. The screen glows at each change, so you'd need to glance at it. Android phones also vibrate; iPhones don't allow that." : 'Tap one to hear it. One bell between phases, two for the last stretch, three at the end.'}</p>
         </section>
 
         <section className="stack" aria-labelledby="ambH">
@@ -101,7 +125,7 @@ export default function Settings({ open, onClose }) {
                 onClick={() => { updateSettings({ ambient: id }); stopAmbient(); if (id !== 'off') { startAmbient(id); clearTimeout(sample.current); sample.current = setTimeout(() => stopAmbient(1500), 6000); } }}>{name}</button>
             ))}
           </div>
-          <p className="mono soft">{(settings.ambient || 'off') === 'off' ? 'Silence between the bells.' : 'Tap one to hear a few seconds. It is made on this phone, plays quietly through the sit and fades before the last bells. While it plays, your lock screen shows the phase and time left.'}</p>
+          <p className="hint">{(settings.ambient || 'off') === 'off' ? 'Silence between the bells.' : 'Tap one to hear a few seconds. It is made on this phone, plays quietly through the sit and fades before the last bells. While it plays, your lock screen shows the phase and time left.'}</p>
         </section>
 
         {voiceSupported() && (
@@ -115,9 +139,11 @@ export default function Settings({ open, onClose }) {
               <span>Read each phase aloud after its bell, so you can keep your eyes closed. Uses this phone’s own voice; nothing is sent anywhere.</span>
             </label>
             <button type="button" className="btn" onClick={() => speakNow('This is how the cues will sound. Connect. Feel your feet and spread your toes.')}>Test the voice</button>
-            <p className="mono soft">No sound? On an iPhone the voice follows the silent switch and the volume buttons, unlike the bells. Flip the switch off silent and try again.</p>
+            <p className="hint">No sound? On an iPhone the voice follows the silent switch and the volume buttons, unlike the bells. Flip the switch off silent and try again.</p>
           </section>
         )}
+        </>}
+        {page === 'buddy' && <>
 
         <section className="stack" aria-labelledby="aboutH">
           <h3 id="aboutH" className="mono caps">About you, for the buddy</h3>
@@ -143,12 +169,14 @@ export default function Settings({ open, onClose }) {
             {!MODELS.some(([id]) => id === settings.model) && <option value={settings.model}>{settings.model}</option>}
           </select>
         </section>
+        </>}
+        {page === 'data' && <>
 
         <section className="stack" aria-labelledby="backupH">
           <h3 id="backupH" className="mono caps">Your data</h3>
           <p className="soft" style={{ fontSize: '0.875rem' }}>{sitsCount.toLocaleString('en-AU')} {sitsCount === 1 ? 'sit' : 'sits'}. Everything lives in this browser on this phone, so back it up now and then. Backups leave out your API key and your books.</p>
           <button type="button" className="btn btn-ink" onClick={async () => { const r = await shareOrDownload(); if (r !== 'cancelled') toast(r === 'shared' ? 'Backed up' : 'Backup downloaded'); }}>Export a backup</button>
-          <p className="mono-s mute">{lastBackup === null ? 'No backup yet.' : lastBackup === 0 ? 'Last backup: today.' : `Last backup: ${lastBackup} day${lastBackup === 1 ? '' : 's'} ago.`} On iPhone, choose Save to Files in the share sheet. A reminder shows on Today every three weeks.</p>
+          <p className="hint">{lastBackup === null ? 'No backup yet.' : lastBackup === 0 ? 'Last backup: today.' : `Last backup: ${lastBackup} day${lastBackup === 1 ? '' : 's'} ago.`} On iPhone, choose Save to Files in the share sheet. A reminder shows on Today every three weeks.</p>
           {autoBackupSupported() && (
             <div className="card stack">
               <p className="mono-s caps">Automatic backup</p>
@@ -207,8 +235,9 @@ export default function Settings({ open, onClose }) {
           }} />
           {packMsg && <p className="notice" role="status">{packMsg}</p>}
         </section>
+        </>}
 
-        <p className="mono-s mute">Integrate · works offline once loaded · add it to your home screen from the share menu</p>
+        {!page && <p className="hint">Integrate works offline once loaded. Add it to your home screen from the share menu.</p>}
       </div>
     </Sheet>
   );

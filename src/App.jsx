@@ -46,7 +46,9 @@ export default function App() {
   const [buddy, setBuddy] = useState({ open: false, starter: null });
   const [buddyUsed, setBuddyUsed] = useState(false); // load the buddy only once it is first opened
   const openBuddy = (starter) => { setBuddyUsed(true); setBuddy({ open: true, starter }); };
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpenRaw] = useState(false);
+  const [settingsPage, setSettingsPage] = useState(null);
+  const setSettingsOpen = (on, page = null) => { setSettingsPage(page); setSettingsOpenRaw(on); };
   const [askBook, setAskBook] = useState(null);
 
   // Theme: scheme + light/dark, re-applied when the phone's setting changes or the sit screen exits.
@@ -138,14 +140,14 @@ export default function App() {
   return (
     <div className="app" data-nav={nav}>
       {saveFailed && (
-        <button type="button" className="save-warn" role="alert" onClick={() => setSettingsOpen(true)}>
+        <button type="button" className="save-warn" role="alert" onClick={() => setSettingsOpen(true, 'data')}>
           This browser isn’t saving your changes. Tap to export a backup before you close the app.
         </button>
       )}
       {route.tab === 'today' && <Today onBegin={begin} onSettings={() => setSettingsOpen(true)} onBuddy={openBuddy} />}
       <Suspense fallback={<main className="screen" aria-busy="true"><p className="mono caps mute">Opening…</p></main>}>
         {route.tab === 'toolkit' && route.view === 'library' && (
-          <Library onBack={() => go('toolkit')} focusBook={askBook} onSettings={() => setSettingsOpen(true)} />
+          <Library onBack={() => go('toolkit')} focusBook={askBook} onSettings={() => setSettingsOpen(true, 'buddy')} />
         )}
         {route.tab === 'toolkit' && route.view !== 'library' && (
           <Toolkit view={route.view} onView={(v) => go('toolkit', v)} onBegin={begin} onAskBook={(id) => { setAskBook(id); go('toolkit', 'library'); }} />
@@ -154,9 +156,9 @@ export default function App() {
       {route.tab === 'reflect' && <Reflect onBuddy={openBuddy} />}
       <TabBar tab={route.tab} onTab={(t) => go(t)} />
       <Suspense fallback={null}>
-        {buddyUsed && <Buddy open={buddy.open} starter={buddy.starter} onClose={() => setBuddy({ open: false, starter: null })} onSettings={() => { setBuddy({ open: false, starter: null }); setSettingsOpen(true); }} />}
+        {buddyUsed && <Buddy open={buddy.open} starter={buddy.starter} onClose={() => setBuddy({ open: false, starter: null })} onSettings={() => { setBuddy({ open: false, starter: null }); setSettingsOpen(true, 'buddy'); }} />}
       </Suspense>
-      <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <Settings open={settingsOpen} start={settingsPage} onClose={() => setSettingsOpenRaw(false)} />
       <Toaster />
       {import.meta.env.DEV && <DevDataToggle />}
     </div>

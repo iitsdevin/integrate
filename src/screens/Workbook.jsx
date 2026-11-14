@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { WORKBOOK, MODULES, ALL_LESSONS, NEEDS, HELP } from '../data/workbook.js';
 import { useStore, addEntry, shortDate } from '../lib/store.js';
-import { Icon, Spark, toast } from '../components/bits.jsx';
+import { Icon, Spark, toast, PageBar } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 import { useBackLayer } from '../lib/history.js';
 import { Player } from '../components/CourseTools.jsx';
@@ -65,6 +65,7 @@ export default function Workbook({ onBack, book = BUILTIN }) {
     return (
       <main className="screen">
         <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setMod(null)}><Icon.back /> {book.backLabel}</button>
+        <PageBar title={module.name.toLowerCase()} onBack={() => setMod(null)} />
         <header className="stack" style={{ gap: 8 }}>
           <p className="mono caps">Module {module.no}{module.pages ? ` · ${book.builtin ? 'book pages' : 'pages'} ${module.pages}` : ''}</p>
           <h1 className="word" style={{ fontSize: 'clamp(3.2rem, 16vw, 4.4rem)', overflowWrap: 'anywhere' }}>{module.name.toLowerCase()}</h1>
@@ -91,6 +92,7 @@ export default function Workbook({ onBack, book = BUILTIN }) {
   return (
     <main className="screen">
       <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={onBack}><Icon.back /> Toolkit</button>
+      <PageBar title={book.title.toLowerCase()} onBack={onBack} />
       <header style={{ position: 'relative' }}>
         <p className="mono caps">{book.eyebrow}</p>
         <div style={{ position: 'relative', marginTop: 6 }}>

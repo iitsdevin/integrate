@@ -69,6 +69,8 @@ h1, h2, h3 { margin: 0; font-weight: 800; }
 .mono { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.02em; line-height: 1.42; }
 .mono-s { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.03em; line-height: 1.4; }
 .caps { text-transform: uppercase; }
+/* Sentences are set in the reading face. The mono face is for short labels only. */
+.hint { font-size: 0.875rem; line-height: 1.45; color: var(--soft); }
 /* Tracking follows size: about -0.01em at 1.5rem, tightening to -0.03em by 6rem and
    never past -0.035em. One formula, so every size of the display face gets its own value. */
 .word { font-weight: 800; font-stretch: 75%; line-height: 0.86; letter-spacing: max(-0.035em, calc(0.04rem - 0.0367em)); }
@@ -244,8 +246,10 @@ textarea.field { min-height: 140px; resize: vertical; }
 }
 .tabbar button { justify-self: center; min-height: 44px; padding: 0 4px; font-family: var(--mono); font-size: min(0.75rem, 3.6vw); letter-spacing: 0.04em; transition: transform 140ms var(--ease-out); }
 .tabbar button:active { transform: scale(0.95); }
-.tabbar button[aria-current='page'] span { background: var(--block2); color: var(--tab-ink); font-weight: 500; padding: 6px 10px; }
-.tabbar button span { padding: 6px 10px; }
+.tabbar button span { position: relative; padding: 6px 10px; transition: color 200ms ease; }
+.tabbar button[aria-current='page'] span { color: var(--tab-ink); font-weight: 500; }
+/* One marker that travels between the tabs. */
+.tab-mark { position: absolute; left: 0; top: calc((var(--tabbar) - env(safe-area-inset-bottom, 0px)) / 2 - 15px); height: 30px; background: var(--block2); pointer-events: none; transition: transform 320ms var(--ease-drawer), width 320ms var(--ease-drawer); }
 
 /* ---------- sheet ---------- */
 .scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); opacity: 0; transition: opacity 260ms var(--ease-out); }
@@ -280,10 +284,26 @@ textarea.field { min-height: 140px; resize: vertical; }
 .sit-strip .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--sit-word); }
 .sit-mid { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px; min-height: 360px; overflow: hidden; }
 .sit-name { color: var(--sit-word); font-size: min(11rem, 40vw, calc((min(100vw, 30rem) - 40px) * var(--fit, 0.6))); white-space: nowrap; margin-left: -4px; }
-.sit-text { max-width: 26rem; color: var(--sit-mute); font-family: var(--mono); font-size: 0.875rem; line-height: 1.55; }
+.sit-text { max-width: 26rem; color: var(--sit-mute); font-size: 1.0625rem; line-height: 1.5; }
 .sit-clock { font-size: clamp(5rem, 28vw, 7rem); font-variant-numeric: tabular-nums; }
 .sit .btn { border-color: var(--sit-ink); color: var(--sit-ink); }
-.sit .mono { color: var(--sit-mute); }
+.sit .mono, .sit .hint { color: var(--sit-mute); }
+
+/* The new phase fades in with its bell. */
+.phase-in { animation: nav-fade 900ms ease backwards; }
+/* Resting: nothing to watch but the strip. */
+.sit:not(.done) .sit-in > * { transition: opacity 1400ms ease; }
+.sit.resting .sit-in > *:not(.sit-strip) { opacity: 0; pointer-events: none; }
+.sit.resting .sit-strip { opacity: 0.45; }
+.sit:not(.done):not(.resting) .sit-in > * { transition-duration: 260ms; }
+
+/* The sit-logged screen keeps the sit's colours, so every component on it follows. */
+.sit.done {
+  --ground: var(--sit-bg); --ink: var(--sit-ink); --deep: var(--sit-word); --mute: var(--sit-mute); --soft: var(--sit-mute);
+  --raised: color-mix(in srgb, var(--sit-ink) 9%, var(--sit-bg)); --block1: color-mix(in srgb, var(--sit-word) 26%, var(--sit-bg));
+  --block2: var(--sit-accent); --tab-ink: var(--sit-bg);
+}
+.sit.done .sit-in { min-height: 0; }
 .warn { color: var(--sit-accent) !important; }
 #glow { position: fixed; inset: 0; z-index: 60; pointer-events: none; background: var(--sit-word); opacity: 0; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -312,6 +332,30 @@ textarea.field { min-height: 140px; resize: vertical; }
   .pacer i { transform: none !important; opacity: 0.35; transition: opacity var(--secs) linear; }
   .pacer[data-in] i { opacity: 1; }
 }
+
+/* ---------- compact page header ---------- */
+.pagebar {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 9; display: flex; align-items: center; gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) var(--gutter-r) 6px var(--gutter);
+  background: color-mix(in srgb, var(--ground) 82%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3);
+  border-bottom: 2px solid var(--ink);
+  transform: translateY(-105%); transition: transform 260ms var(--ease-drawer);
+}
+.pagebar[data-on] { transform: none; }
+.pagebar .btn { width: 40px; height: 40px; min-height: 40px; }
+.pagebar .word { font-size: 1.5rem; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+/* ---------- depth behind a sheet ---------- */
+.screen { transform-origin: 50% var(--behind-y, 50vh); transition: transform 300ms var(--ease-drawer); }
+html[data-sheet] .screen { transform: scale(0.965); transition-duration: 440ms; }
+.settings-page { animation: nav-fade 200ms var(--ease-out) backwards; }
+
+/* ---------- a category opening from its tile ---------- */
+::view-transition-group(cat-title) { animation-duration: 340ms; animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1); }
+::view-transition-old(cat-title), ::view-transition-new(cat-title) { height: 100%; width: auto; object-fit: contain; object-position: left center; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 240ms; }
+html[data-vt] .app[data-nav] .screen { animation: none; } /* the morph replaces the slide */
 
 /* ---------- after a sit ---------- */
 .done { animation: nav-fade 900ms ease backwards; }
@@ -401,12 +445,15 @@ select.field { width: 100%; min-height: 48px; padding: 0 12px; border: 2px solid
   .btn-shadow:active { box-shadow: 5px 5px 0 var(--block2); }
   .toast { transition: opacity 200ms ease; @starting-style { opacity: 0; transform: translateX(-50%); } }
   .toast[data-leaving] { transform: translateX(-50%); }
+  .tab-mark, .pagebar { transition: none; }
+  html[data-sheet] .screen { transform: none; }
+  .phase-in { animation-duration: 200ms; }
   /* Pages cross-fade instead of sliding. */
   .app[data-nav] .screen { animation: nav-fade 160ms ease backwards; }
 }
 @keyframes bead-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-transparency: reduce) {
-  .tabbar { background: var(--ground); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .tabbar, .pagebar { background: var(--ground); -webkit-backdrop-filter: none; backdrop-filter: none; }
   .grain, .sheet::before, .sit::before { display: none; }
 }
 @media (prefers-contrast: more) {
