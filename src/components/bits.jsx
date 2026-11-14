@@ -23,9 +23,10 @@ export const Icon = {
 };
 
 // 108 beads. Beads lit since the last render arrive with a small settle.
-export function Mala({ count }) {
-  const lit = count % 108;
-  const round = Math.floor(count / 108);
+// `full` shows a just-completed round as 108 of 108 rather than an empty new one.
+export function Mala({ count, full = false }) {
+  const lit = full ? 108 : count % 108;
+  const round = full ? Math.floor(count / 108) - 1 : Math.floor(count / 108);
   const prev = useRef(null);
   const [fresh, setFresh] = useState(() => new Set());
   useEffect(() => {

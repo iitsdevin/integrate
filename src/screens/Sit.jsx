@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ring, audioUnlocked, unlockAudio } from '../lib/bells.js';
 import { setThemeColor } from '../lib/theme.js';
-import { Spark } from '../components/bits.jsx';
+import { Spark, Mala } from '../components/bits.jsx';
+import { useStore } from '../lib/store.js';
+import { speak, hush, cueFor } from '../lib/voice.js';
 import { REST } from '../data/daily.js';
 import { total, locate, restPlan } from '../lib/sit.js';
 import { useBackLayer } from '../lib/history.js';
@@ -11,7 +13,7 @@ export const saveActive = (a) => { try { a ? localStorage.setItem(KEY, JSON.stri
 export const loadActive = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } };
 const pad = (n) => String(n).padStart(2, '0');
 
-export default function Sit({ active: initial, bell, onEnd }) {
+export default function Sit({ active: initial, bell, voice = false, onEnd }) {
   const [active, setActive] = useState(initial);
   const [now, setNow] = useState(Date.now());
   const [wake, setWake] = useState({ ok: true, text: '' });
@@ -49,6 +51,13 @@ export default function Sit({ active: initial, bell, onEnd }) {
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, []);
+
+  // Spoken cues: each phase is read aloud a moment after its bell.
+  useEffect(() => {
+    if (!voice) return undefined;
+    speak(cueFor(active.phases[active.idx]), 2600);
+    return hush;
+  }, [voice, active.idx, active.rough]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const el = (now - active.start) / 1000;
   const T = total(active.phases);
@@ -143,18 +152,49 @@ export default function Sit({ active: initial, bell, onEnd }) {
   );
 }
 
+// After the sit. The last bell is still ringing, so this arrives quietly: first the
+// bead landing on the mala, then, a moment later, the place to write. A tap skips the wait.
 export function Done({ result, onSave }) {
+  const count = useStore((s) => s.sits.length);
   const [note, setNote] = useState('');
+  const [dedication, setDedication] = useState('');
+  const [beads, setBeads] = useState(Math.max(0, count - 1)); // one render without the new bead, so it can arrive
+  const [ready, setReady] = useState(false);
   const mins = Math.max(1, Math.round(result.secs / 60));
+  const round = count > 0 && count % 108 === 0 ? count / 108 : 0; // this sit completed a round of the mala
+
+  useEffect(() => {
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const a = setTimeout(() => setBeads(count), still ? 0 : 500);
+    const b = setTimeout(() => setReady(true), still ? 0 : 2200);
+    return () => { clearTimeout(a); clearTimeout(b); };
+  }, [count]);
+
+  const save = () => onSave(note.trim(), round && dedication.trim() ? `Round ${round} of the mala, 108 sits. Dedicated to ${dedication.trim()}` : '');
+
   return (
-    <main className="screen" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 40px)' }}>
-      <p className="mono caps">{result.completed ? result.active.label + ' · ' + mins + ' min' : 'That counts · ' + mins + ' min'}</p>
-      <h1 className="word title-xl" style={{ fontSize: 'clamp(4.5rem, 22vw, 6rem)' }}>sit<br /><span className="deep">logged.</span></h1>
-      <label htmlFor="sitnote" className="mono caps">What did you notice?</label>
-      <textarea id="sitnote" className="field" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional. The time and the sit are saved for you." enterKeyHint="done" />
-      <button type="button" className="btn btn-ink btn-shadow btn-block begin" onClick={() => onSave(note.trim())}>
-        <span>Done</span><span className="mono">→</span>
-      </button>
+    <main className={'screen done' + (round ? ' done-round' : '')} style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 40px)' }} onPointerDown={() => { setBeads(count); setReady(true); }}>
+      <p className="mono caps">{round ? `Round ${round} complete · 108 sits` : result.completed ? result.active.label + ' · ' + mins + ' min' : 'That counts · ' + mins + ' min'}</p>
+      {round
+        ? <h1 className="word title-xl" style={{ fontSize: 'clamp(4.5rem, 22vw, 6rem)' }}>one<br /><span className="deep">hundred</span><br />& eight.</h1>
+        : <h1 className="word title-xl" style={{ fontSize: 'clamp(4.5rem, 22vw, 6rem)' }}>sit<br /><span className="deep">logged.</span></h1>}
+      <Mala count={round ? count : beads} full={!!round && beads === count} />
+      <div className="done-rest stack" data-ready={ready || undefined} style={{ gap: 20 }}>
+        {round > 0 && (
+          <div className="card card-lav stack">
+            <p style={{ fontWeight: 700, fontSize: '1.125rem', lineHeight: 1.3 }}>Every bead on the mala is lit. Before the next round begins, who or what is this one for?</p>
+            <label htmlFor="dedicate" className="mono caps">Dedicate this round</label>
+            <input id="dedicate" className="field" value={dedication} onChange={(e) => setDedication(e.target.value)} placeholder="Optional. Kept in your journal." enterKeyHint="next" />
+          </div>
+        )}
+        <div className="stack" style={{ gap: 8 }}>
+          <label htmlFor="sitnote" className="mono caps">What did you notice?</label>
+          <textarea id="sitnote" className="field" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional. The time and the sit are saved for you." enterKeyHint="done" />
+        </div>
+        <button type="button" className="btn btn-ink btn-shadow btn-block begin" onClick={save}>
+          <span>Done</span><span className="mono">→</span>
+        </button>
+      </div>
     </main>
   );
 }

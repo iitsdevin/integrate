@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS = {
   scheme: 'paper', mode: 'auto', bell: 'bowl', body: 'shake',
   aboutMe: '', model: 'claude-sonnet-5-5',
   sit: { connect: 3, dive: 14, integrate: 3 }, // minutes of the daily sit
+  voice: false, // speak each phase aloud
 };
 export const SIT_LIMITS = { connect: [1, 10], dive: [3, 45], integrate: [1, 15] };
 export function sitLengths(settings = state.settings) {

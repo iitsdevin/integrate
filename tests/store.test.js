@@ -62,3 +62,34 @@ describe('import', () => {
     expect(() => importText(JSON.stringify({ format: 'bmo2', data: { sits: 'nope' } }))).toThrow();
   });
 });
+
+import { gapDays, dailyThread, observe } from '../src/lib/notice.js';
+
+describe('notices', () => {
+  const now = new Date(2026, 10, 14, 12);
+  const ago = (d, extra = {}) => ({ at: new Date(now - d * 864e5).toISOString(), ...extra });
+  it('measures the gap since the last sit', () => {
+    expect(gapDays([], '2026-11-14')).toBeNull();
+    expect(gapDays([{ at: new Date(2026, 10, 10, 7).toISOString() }], '2026-11-14')).toBe(4);
+    expect(gapDays([{ at: new Date(2026, 10, 14, 7).toISOString() }], '2026-11-14')).toBe(0);
+  });
+  it('gives the same thread all day and rotates between kinds', () => {
+    const data = { readings: [{ title: 'T', author: 'A', seed: 'a seed', practice: 'try it', categoryId: 'zen' }], journal: [ago(30, { text: 'a note from a month ago that is long enough', kind: 'note' })] };
+    const a = dailyThread(data, now), b = dailyThread(data, new Date(2026, 10, 14, 23));
+    expect(a).toEqual(b);
+    const kinds = new Set([0, 1, 2].map((d) => dailyThread(data, new Date(2026, 10, 14 + d, 12)).kind));
+    expect([...kinds].sort()).toEqual(['journal', 'reading', 'try']);
+    expect(dailyThread({}, now)).toBeNull();
+  });
+  it('never uses a recent note as the thread', () => {
+    const t = [0, 1, 2].map((d) => dailyThread({ readings: [], journal: [ago(3, { text: 'too recent to be surfaced back to me yet' })] }, new Date(2026, 10, 14 + d)));
+    expect(t).toEqual([null, null, null]);
+  });
+  it('observes without scolding', () => {
+    expect(observe({ sits: [] }, now)).toMatch(/quiet week/i);
+    expect(observe({ sits: [ago(1, { feel: 'wired' }), ago(2, { feel: 'wired' }), ago(3, { feel: 'wired' }), ago(4, { feel: 'okay' })] }, now)).toBe('You arrived wired for 3 of your last 4 sits, and sat anyway.');
+    expect(observe({ sits: [ago(1, { rough: true }), ago(2, { rough: true })] }, now)).toMatch(/2 sits this week turned rough/);
+    expect(observe({ sits: [ago(1)], checkins: { W1: { at: ago(8).at, settled: 3 }, W2: { at: ago(0).at, settled: 6 } } }, now)).toBe('Settled moved from 3 to 6 since your last check-in.');
+    expect(observe({ sits: [ago(1), ago(20)] }, now)).toBe('You sat 1 time this week.');
+  });
+});

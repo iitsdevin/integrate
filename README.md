@@ -2,7 +2,7 @@
 
 A daily sit in three phases — **Connect** (a 3-minute somatic practice), **Dive** (the mantra), **Integrate** (open, whole-body awareness) — with a toolkit of practices by lineage, a journal, and a reflection buddy.
 
-- **Today** — the sit, the 108-bead mala, a feeling check-in.
+- **Today** — the sit, the 108-bead mala, a feeling check-in, a daily thread (a reading seed, a practice to try, or a note of your own from weeks back), and a gentler start after days away. Optional spoken cues read each phase aloud.
 - **Toolkit** — Regulation, Somatic, Zen, Kundalini, The Broad Place, Imaginal, Vajrayana, Earth & kin, an *ACT for ADHD* course, a *Neurodivergence Skills* workbook (an interactive companion to Kemp and Mitchelson's *The Neurodivergence Skills Workbook for Autism and ADHD*, written in the app's own words with page references to the book), and *Your library*: add PDFs or EPUBs you own and ask them questions.
 - **Reflect** — journal (searchable), weekly check-ins, a patterns view of your weeks (no streaks), your plan, and the buddy (Claude, via your own Anthropic API key) that can read your sits, notes, toolkit and library and draft a plan.
 

@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useStore, setToday, updateSettings, localDate, timeOf, addSit, removeSit, sitLengths } from '../lib/store.js';
 import { BODY_OPTIONS, bodyOption, dailySit, badDay, secondSit, FEELS, FEEL_TEXT, WHEN_TO_PAUSE, DEFAULT_PLAN } from '../data/daily.js';
 import { planWeek, backupDue, daysSinceBackup, shareOrDownload, snoozeBackup } from '../lib/backup.js';
 import { Mala, Spark, Icon, toast } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 import PracticeSheet from '../components/PracticeSheet.jsx';
-import { allPractices } from '../data/content.js';
+import { allPractices, allReadings } from '../data/content.js';
+import { gapDays, dailyThread } from '../lib/notice.js';
 
 const two = (n) => String(n).padStart(2, '0');
 
@@ -27,6 +28,11 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
   const totalMin = mins.connect + mins.dive + mins.integrate;
   const [practice, setPractice] = useState(null);
   const pinned = (s.pins || []).length ? allPractices().filter((x) => s.pins.includes(x.id)) : [];
+
+  // Back after three or more days away: a gentler Today, with the short sit first.
+  const gap = gapDays(s.sits, today);
+  const returning = gap !== null && gap >= 3;
+  const thread = useMemo(() => dailyThread({ journal: s.journal, readings: allReadings() }), [s.journal, today]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const eyebrowR = planDone ? 'PLAN FINISHED' : wk && plan.weeks ? `WK ${two(wk)}/${two(plan.weeks)}${s.plan ? ' · ' + (plan.title || '').toUpperCase() : ''}` : (plan.title || '').toUpperCase();
 
@@ -54,6 +60,13 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
           <p className="mono-s caps">{plan.title} · finished {new Date(plan.to + 'T12:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</p>
           <h2 id="doneH" style={{ fontWeight: 700, fontSize: '1.125rem', lineHeight: 1.25 }}>Time to decide what to keep. Your buddy can look back over it with you and draft what comes next.</h2>
           <button type="button" className="btn btn-ink" onClick={() => onBuddy('My plan has finished. Look back over how it went and help me decide what to keep for the next stretch.')}>Review it with my buddy</button>
+        </section>
+      )}
+
+      {returning && (
+        <section className="card card-lav stack" aria-labelledby="backH">
+          <h2 id="backH" className="word" style={{ fontSize: '2rem' }}>Good to see you.</h2>
+          <p style={{ fontSize: '1.0625rem', lineHeight: 1.4 }}>Nothing to catch up on. Three minutes counts, and it is here if that is what today has room for.</p>
         </section>
       )}
 
@@ -85,21 +98,38 @@ export default function Today({ onBegin, onSettings, onBuddy }) {
       </div>
 
       <div className="stack" style={{ gap: 12 }}>
-        <button type="button" className="btn btn-ink btn-shadow btn-block begin" onClick={() => onBegin(dailySit(bodyId, mins))}>
-          <span>{todays.length ? 'Sit again' : 'Begin'}</span><span className="mono">{totalMin}:00</span>
-        </button>
+        {returning ? (
+          <button type="button" className="btn btn-ink btn-shadow btn-block begin" onClick={() => onBegin(badDay())}>
+            <span>Begin small</span><span className="mono">3:00</span>
+          </button>
+        ) : (
+          <button type="button" className="btn btn-ink btn-shadow btn-block begin" onClick={() => onBegin(dailySit(bodyId, mins))}>
+            <span>{todays.length ? 'Sit again' : 'Begin'}</span><span className="mono">{totalMin}:00</span>
+          </button>
+        )}
         {todays.length > 0 && <p className="mono" role="status">You sat today at {timeOf(todays[todays.length - 1].at)}. That's the day's sit done.</p>}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <button type="button" className="btn btn-tight" onClick={() => onBegin(badDay())}>Bad day · 3′</button>
+          {returning
+            ? <button type="button" className="btn btn-tight" onClick={() => onBegin(dailySit(bodyId, mins))}>Full sit · {totalMin}′</button>
+            : <button type="button" className="btn btn-tight" onClick={() => onBegin(badDay())}>Bad day · 3′</button>}
           <button type="button" className="btn btn-tight" onClick={() => onBegin(secondSit())}>Second sit · 12′</button>
         </div>
       </div>
+
+      {thread && (
+        <section className="card thread" aria-labelledby="threadH">
+          <h2 id="threadH" className="mono-s caps" style={{ fontWeight: 400 }}>Today’s thread · {thread.label}</h2>
+          <p style={{ fontSize: '1.0625rem', lineHeight: 1.45, whiteSpace: thread.kind === 'journal' ? 'pre-wrap' : undefined }}>{thread.kind === 'journal' ? `“${thread.text}”` : thread.text}</p>
+          {thread.view && <button type="button" className="link-btn" onClick={() => { location.hash = '#toolkit/' + thread.view; }}>Find it in the toolkit <Icon.arrow /></button>}
+        </section>
+      )}
 
       <Mala count={s.sits.length} />
       <div className="between" style={{ marginTop: -8 }}>
         <button type="button" className="link-btn" onClick={() => {
           const sit = addSit({ at: new Date().toISOString(), kind: 'manual', label: 'Sat without the timer', minutes: 0, done: true, feel });
-          toast('Bead added. Nice.', { action: 'Undo', onAction: () => removeSit(sit.id) });
+          const n = s.sits.length + 1;
+          toast(n % 108 === 0 ? `That bead completes round ${n / 108} of the mala. 108 sits.` : 'Bead added. Nice.', { action: 'Undo', onAction: () => removeSit(sit.id) });
         }}>
           <Icon.plus /> I sat without the timer
         </button>

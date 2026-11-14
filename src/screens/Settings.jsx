@@ -4,6 +4,7 @@ import { toast } from '../components/bits.jsx';
 import { useStore, updateSettings, getApiKey, setApiKey, DEFAULT_SETTINGS, lastSaveFailed, sitLengths, SIT_LIMITS } from '../lib/store.js';
 import { SCHEMES, resolveDark } from '../lib/theme.js';
 import { SOUNDS, unlockAudio, ring, preloadBells } from '../lib/bells.js';
+import { voiceSupported, speak, hush } from '../lib/voice.js';
 import { shareOrDownload, importText, daysSinceBackup } from '../lib/backup.js';
 import { storageEstimate, askPersist } from '../lib/library.js';
 import { usePacks, importPackText, removePack } from '../lib/packs.js';
@@ -87,6 +88,19 @@ export default function Settings({ open, onClose }) {
           </div>
           <p className="mono soft">{settings.bell === 'silent' ? "No sound. The screen glows at each change, so you'd need to glance at it. Android phones also vibrate; iPhones don't allow that." : 'Tap one to hear it. One bell between phases, two for the last stretch, three at the end.'}</p>
         </section>
+
+        {voiceSupported() && (
+          <section className="stack" aria-labelledby="voiceH">
+            <h3 id="voiceH" className="mono caps">Spoken cues</h3>
+            <label className="check">
+              <input type="checkbox" checked={!!settings.voice} onChange={(e) => {
+                updateSettings({ voice: e.target.checked });
+                if (e.target.checked) speak('Connect. Feel your feet and spread your toes.'); else hush();
+              }} />
+              <span>Read each phase aloud after its bell, so you can keep your eyes closed. Uses this phone’s own voice; nothing is sent anywhere.</span>
+            </label>
+          </section>
+        )}
 
         <section className="stack" aria-labelledby="aboutH">
           <h3 id="aboutH" className="mono caps">About you, for the buddy</h3>

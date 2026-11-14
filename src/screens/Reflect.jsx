@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { useStore, addEntry, updateEntry, removeEntry, removeSit, setCheckin, setPlan, updateSettings, DEFAULT_SETTINGS, shortDate, timeOf } from '../lib/store.js';
+import { useStore, getState, addEntry, updateEntry, removeEntry, removeSit, setCheckin, setPlan, updateSettings, DEFAULT_SETTINGS, shortDate, timeOf } from '../lib/store.js';
 import { DEFAULT_PLAN } from '../data/daily.js';
 import { planWeek, checkinKey, checkinWeek } from '../lib/backup.js';
 import Patterns from '../components/Patterns.jsx';
+import { observe } from '../lib/notice.js';
 import { Spark, Icon, toast } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 
@@ -18,6 +19,7 @@ export default function Reflect({ onBuddy }) {
   const [limit, setLimit] = useState(30);
   const plan = s.plan || DEFAULT_PLAN;
   const [patterns, setPatterns] = useState(false);
+  const [noticed, setNoticed] = useState(null); // a line shown after a check-in
   const [q, setQ] = useState('');
   const wk = planWeek(plan);
   const wkKey = wk ? checkinKey(plan, wk) : null;
@@ -62,6 +64,17 @@ export default function Reflect({ onBuddy }) {
         </div>
         <button type="button" className="link-btn" style={{ color: 'inherit', alignSelf: 'flex-start' }} onClick={() => onBuddy(null)}>Open conversation <Icon.arrow /></button>
       </section>
+
+      {noticed && (
+        <section className="card stack" style={{ boxShadow: '4px 4px 0 var(--block1)' }} aria-labelledby="noticeH" role="status">
+          <h2 id="noticeH" className="mono-s caps" style={{ fontWeight: 400 }}>Noticed, from your week</h2>
+          <p style={{ fontWeight: 700, fontSize: '1.125rem', lineHeight: 1.3 }}>{noticed}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
+            <button type="button" className="btn btn-ink" onClick={() => { const n = noticed; setNoticed(null); onBuddy(`I just did my weekly check-in and the app noticed this: "${n}" Can we talk it through?`); }}>Talk it through</button>
+            <button type="button" className="btn" onClick={() => setNoticed(null)}>Not now</button>
+          </div>
+        </section>
+      )}
 
       <button type="button" className="card card-lime" style={{ textAlign: 'left', border: '2px solid var(--ink)' }} onClick={() => setPlanOpen(true)}>
         <span className="between mono-s caps"><span>Your plan · {plan.title}</span><span>{wk && plan.weeks ? `WK ${String(wk).padStart(2, '0')}/${String(plan.weeks).padStart(2, '0')}` : ''}</span></span>
@@ -112,7 +125,7 @@ export default function Reflect({ onBuddy }) {
           );
           return (
             <button key={row.entry.id} type="button" className="entry" onClick={() => setEditing({ sit: row.sit, entry: row.entry, text: row.entry.text })}>
-              <p className="mono-s mute">{row.sit ? sitMeta(row.sit) : shortDate(row.at) + ' · ' + timeOf(row.at).toUpperCase() + ' · NOTE'}</p>
+              <p className="mono-s mute">{row.sit ? sitMeta(row.sit) : shortDate(row.at) + ' · ' + timeOf(row.at).toUpperCase() + (row.entry.kind === 'round' ? ' · ROUND COMPLETE' : ' · NOTE')}</p>
               <p className="clamp">{row.entry.text}</p>
             </button>
           );
@@ -133,7 +146,7 @@ export default function Reflect({ onBuddy }) {
       </Sheet>
 
       <Sheet open={checkin} onClose={() => setCheckinOpen(false)} title={`week ${wk}`} kicker="Check-in · one minute">
-        {checkin && <Checkin week={wkKey} initial={thisCheckin} onDone={() => { setCheckinOpen(false); toast('Check-in saved'); }} />}
+        {checkin && <Checkin week={wkKey} initial={thisCheckin} onDone={() => { setCheckinOpen(false); const n = observe(getState()); setNoticed(n); if (n) window.scrollTo({ top: 0 }); else toast('Check-in saved'); }} />}
       </Sheet>
 
       <Sheet open={patterns} onClose={() => setPatterns(false)} title="patterns" kicker="No streaks. Just the shape of it.">

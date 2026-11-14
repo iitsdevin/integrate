@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import { useStore, getState, addSit, addEntry, useSaveFailed, flush } from './lib/store.js';
 import { applyTheme, onSystemThemeChange } from './lib/theme.js';
 import { ring, unlockAudio, preloadBells } from './lib/bells.js';
+import { unlockVoice } from './lib/voice.js';
 import { bodyOption } from './data/daily.js';
 import { TabBar, Toaster, toast } from './components/bits.jsx';
 import Today from './screens/Today.jsx';
@@ -94,6 +95,7 @@ export default function App() {
 
   function begin(plan) {
     unlockAudio();
+    if (getState().settings.voice) unlockVoice();
     const t = getState().today;
     const a = {
       kind: plan.kind, label: plan.label, day: plan.day || 0,
@@ -117,11 +119,12 @@ export default function App() {
     setDone({ completed, secs, active: a, sit });
   }
 
-  if (active) return <Sit active={active} bell={settings.bell} onEnd={end} />;
+  if (active) return <Sit active={active} bell={settings.bell} voice={!!settings.voice} onEnd={end} />;
   if (done) return (
     <div className="app">
-      <Done result={done} onSave={(note) => {
+      <Done result={done} onSave={(note, dedication) => {
         if (note) addEntry({ text: note, kind: 'sit', sitId: done.sit.id, at: done.sit.at });
+        if (dedication) addEntry({ text: dedication, kind: 'round' });
         setDone(null); go('today');
       }} />
     </div>
