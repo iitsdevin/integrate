@@ -18,14 +18,15 @@ export const BODY_OPTIONS = [
 ];
 export const bodyOption = (id) => BODY_OPTIONS.find((o) => o.id === id) || BODY_OPTIONS[0];
 
-export function dailySit(bodyId) {
+// `mins` is { connect, dive, integrate } from Settings (or a plan drafted with the buddy).
+export function dailySit(bodyId, mins = { connect: 3, dive: 14, integrate: 3 }) {
   const b = bodyOption(bodyId);
   return {
     kind: 'daily', label: 'Connect, Dive, Integrate',
     phases: [
-      { label: 'Connect', min: 3, name: b.name, text: b.text, body: b.id },
-      { label: 'Dive', min: 14, text: MANTRA },
-      { label: 'Integrate', min: 3, text: OPEN },
+      { label: 'Connect', min: mins.connect, name: b.name, text: b.text, body: b.id },
+      { label: 'Dive', min: mins.dive, text: MANTRA },
+      { label: 'Integrate', min: mins.integrate, text: OPEN },
     ],
   };
 }

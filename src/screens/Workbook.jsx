@@ -3,6 +3,7 @@ import { WORKBOOK, MODULES, ALL_LESSONS, NEEDS, HELP } from '../data/workbook.js
 import { useStore, addEntry, shortDate } from '../lib/store.js';
 import { Icon, Spark, toast } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
+import { useBackLayer } from '../lib/history.js';
 import { Player } from '../components/CourseTools.jsx';
 import { wbState, setWb, markDone, WorkbookItems, answersText, hasAnswers } from '../components/WorkbookTools.jsx';
 import { Progress } from './Course.jsx';
@@ -37,6 +38,9 @@ export default function Workbook({ onBack, book = BUILTIN }) {
   const practices = LESSONS.filter((l) => l.steps);
 
   useEffect(() => { window.scrollTo(0, 0); }, [mod]);
+  // Back steps out of a module or a guided practice before it leaves this page.
+  useBackLayer(!!mod, () => setMod(null));
+  useBackLayer(!!playing, () => setPlaying(null));
 
   const finish = (l) => {
     setPlaying(null);

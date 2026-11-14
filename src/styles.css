@@ -66,10 +66,12 @@ h1, h2, h3 { margin: 0; font-weight: 800; }
 }
 
 /* ---------- type ---------- */
-.mono { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.03em; line-height: 1.4; }
-.mono-s { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.03em; line-height: 1.38; }
+.mono { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.02em; line-height: 1.42; }
+.mono-s { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.03em; line-height: 1.4; }
 .caps { text-transform: uppercase; }
-.word { font-weight: 800; font-stretch: 75%; line-height: 0.86; letter-spacing: -0.03em; }
+/* Tracking follows size: about -0.01em at 1.5rem, tightening to -0.03em by 6rem and
+   never past -0.035em. One formula, so every size of the display face gets its own value. */
+.word { font-weight: 800; font-stretch: 75%; line-height: 0.86; letter-spacing: max(-0.035em, calc(0.04rem - 0.0367em)); }
 .title-xl { font-size: clamp(5rem, 26vw, 6.6rem); }
 .title-l { font-size: 2rem; }
 .soft { color: var(--soft); }
@@ -133,6 +135,16 @@ h1, h2, h3 { margin: 0; font-weight: 800; }
 .hero button.w { text-align: left; color: inherit; transition: transform 140ms var(--ease-out); transform-origin: left center; }
 .hero button.w:active { transform: scale(0.98); }
 .spark { position: absolute; }
+/* Large text: the collage cannot hold bigger notes, so it becomes a plain stack —
+   each word followed by its note. Container queries measure in the reader's rem. */
+.hero-wrap { container-type: inline-size; }
+@container (max-width: 17.5rem) {
+  .hero { height: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .hero .w, .hero .note { position: static; }
+  .hero .note { width: auto !important; margin: 4px 0 14px; font-size: 0.75rem; }
+  .hero .blk, .hero .spark { display: none; }
+  .hero .w.deep { background: var(--block1); padding: 0 0.08em; }
+}
 .mala-row { display: flex; align-items: center; gap: 16px; padding-top: 14px; }
 .mala { width: 80px; height: 80px; flex: none; color: var(--deep); }
 .mala circle { fill: color-mix(in srgb, var(--ink) 26%, transparent); }
@@ -150,12 +162,12 @@ h1, h2, h3 { margin: 0; font-weight: 800; }
   transition: background-color 140ms ease;
 }
 .item:active { background: color-mix(in srgb, var(--ink) 6%, transparent); }
-.item .n { font-family: var(--mono); font-size: 0.625rem; }
+.item .n { font-family: var(--mono); font-size: 0.6875rem; }
 .item .t { font-weight: 700; font-size: 1.25rem; line-height: 1.12; overflow-wrap: anywhere; min-width: 0; }
 .item .d { grid-column: 2 / 4; font-size: 0.875rem; line-height: 1.38; color: var(--soft); overflow-wrap: anywhere; }
 .item .m { font-family: var(--mono); font-size: 0.6875rem; white-space: nowrap; }
 .group-title { padding: 18px 0 8px; border-bottom: 2px solid var(--ink); display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.group-title h2 { font-weight: 800; font-stretch: 75%; font-size: 1.6rem; line-height: 1; }
+.group-title h2 { font-weight: 800; font-stretch: 75%; font-size: 1.6rem; line-height: 1; letter-spacing: -0.012em; }
 .group-note { padding-top: 8px; font-size: 0.875rem; color: var(--soft); line-height: 1.4; }
 
 /* ---------- toolkit ---------- */
@@ -170,7 +182,8 @@ h1, h2, h3 { margin: 0; font-weight: 800; }
 .tile.tall { min-height: 150px; }
 .tile:active { transform: scale(0.97); }
 .tile { container-type: inline-size; }
-.tile b { display: block; font-weight: 800; font-stretch: 75%; font-size: clamp(1.25rem, 20.5cqi, 1.85rem); line-height: 0.92; overflow-wrap: anywhere; }
+/* Sized from the tile, not the text setting, so a long word never breaks mid-word at large text. */
+.tile b { display: block; font-weight: 800; font-stretch: 75%; font-size: min(1.85rem, 19cqi); line-height: 0.92; letter-spacing: -0.014em; overflow-wrap: anywhere; }
 .tile .h { display: block; margin-top: 6px; }
 .tile.lime { background: var(--block2); color: var(--tab-ink); box-shadow: 4px 4px 0 var(--ink); }
 .tile.lavender { background: var(--block1); }
@@ -229,7 +242,7 @@ textarea.field { min-height: 140px; resize: vertical; }
   -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3);
   border-top: 2px solid var(--ink);
 }
-.tabbar button { justify-self: center; min-height: 44px; padding: 0 12px; font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.04em; transition: transform 140ms var(--ease-out); }
+.tabbar button { justify-self: center; min-height: 44px; padding: 0 4px; font-family: var(--mono); font-size: min(0.75rem, 3.6vw); letter-spacing: 0.04em; transition: transform 140ms var(--ease-out); }
 .tabbar button:active { transform: scale(0.95); }
 .tabbar button[aria-current='page'] span { background: var(--block2); color: var(--tab-ink); font-weight: 500; padding: 6px 10px; }
 .tabbar button span { padding: 6px 10px; }
@@ -250,7 +263,7 @@ textarea.field { min-height: 140px; resize: vertical; }
 .sheet::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: var(--grain); background-size: 180px 180px; }
 .sheet-grab { position: relative; flex: none; padding: 8px var(--gutter-r) 10px var(--gutter); touch-action: none; cursor: grab; border-bottom: 2px solid var(--ink); }
 .sheet-grab::before { content: ''; display: block; width: 44px; height: 5px; margin: 0 auto 10px; background: var(--ink); }
-.sheet-grab h2 { font-weight: 800; font-stretch: 75%; font-size: 2rem; line-height: 0.95; }
+.sheet-grab h2 { font-weight: 800; font-stretch: 75%; font-size: 2rem; line-height: 0.95; letter-spacing: -0.016em; }
 .sheet-body { position: relative; flex: 1; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px var(--gutter-r) calc(24px + env(safe-area-inset-bottom, 0px)) var(--gutter); }
 .sheet-foot { position: relative; flex: none; }
 
@@ -277,10 +290,70 @@ textarea.field { min-height: 140px; resize: vertical; }
 
 .toast {
   position: fixed; left: 50%; bottom: calc(var(--tabbar) + 14px); z-index: 70; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px;
   max-width: calc(100vw - 40px); padding: 10px 14px; background: var(--ink); color: var(--ground); font-family: var(--mono); font-size: 0.75rem;
-  transition: opacity 300ms ease, transform 300ms ease;
+  transition: opacity 240ms var(--ease-out), transform 240ms var(--ease-out);
   @starting-style { opacity: 0; transform: translate(-50%, 12px); }
 }
+/* Leaves the way it came, a little quicker. */
+.toast[data-leaving] { opacity: 0; transform: translate(-50%, 12px); transition-duration: 200ms; transition-timing-function: ease-in; }
+.toast button { min-height: 44px; margin: -10px -6px -10px 0; padding: 0 8px; color: var(--block2); font: inherit; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; text-decoration: underline; text-underline-offset: 3px; }
+[data-scheme][data-theme='dark'] .toast button { color: var(--block1); }
+
+/* ---------- moving between pages ---------- */
+/* A tab is a sibling: cross-fade. A page inside a tab is deeper: it arrives from the
+   right and, going back, the parent returns from the left — out the way it came. */
+.app[data-nav='tab'] .screen { animation: nav-fade 200ms var(--ease-out) backwards; }
+.app[data-nav='push'] .screen { animation: nav-push 280ms var(--ease-drawer) backwards; }
+.app[data-nav='pop'] .screen { animation: nav-pop 280ms var(--ease-drawer) backwards; }
+@keyframes nav-fade { from { opacity: 0; } }
+@keyframes nav-push { from { opacity: 0; transform: translateX(22px); } }
+@keyframes nav-pop { from { opacity: 0; transform: translateX(-22px); } }
+
+.save-warn { position: sticky; top: 0; z-index: 9; display: block; width: 100%; padding: calc(env(safe-area-inset-top, 0px) + 10px) var(--gutter-r) 10px var(--gutter); background: var(--ink); color: var(--ground); font-size: 0.875rem; font-weight: 600; line-height: 1.35; text-align: left; }
+
+.search { position: relative; }
+.search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.search input.field { padding-left: 38px; min-height: 48px; -webkit-appearance: none; appearance: none; }
+.search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: linear-gradient(45deg, transparent 44%, var(--ink) 44%, var(--ink) 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, var(--ink) 44%, var(--ink) 56%, transparent 56%); cursor: pointer; }
+
+.stepper { display: grid; grid-template-columns: minmax(0, 1fr) 44px 4.5rem 44px; gap: 8px; align-items: center; font-weight: 600; }
+.stepper output { text-align: center; }
+.stepper .btn { font-size: 1.25rem; }
+select.field { width: 100%; min-height: 48px; padding: 0 12px; border: 2px solid var(--ink); border-radius: 0; background: var(--raised); color: var(--ink); }
+.slider input[data-unset] { opacity: 0.5; }
+
+/* ---------- buddy text ---------- */
+.md { display: flex; flex-direction: column; gap: 10px; line-height: 1.5; overflow-wrap: anywhere; -webkit-user-select: text; user-select: text; }
+.md.msg-bot { white-space: normal; }
+.md ul, .md ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+.md .md-h { font-weight: 700; }
+.md code { font-family: var(--mono); font-size: 0.875em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: 1px 4px; }
+.md blockquote { margin: 0; padding-left: 12px; border-left: 3px solid var(--deep); color: var(--soft); }
+
+/* ---------- patterns ---------- */
+.chart { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-grid { stroke: color-mix(in srgb, var(--ink) 18%, transparent); stroke-width: 1; stroke-dasharray: 2 4; }
+.chart-axis { stroke: var(--ink); stroke-width: 2; }
+.chart-tick { font-family: var(--mono); font-size: 10px; fill: var(--mute); }
+.chart-bar { fill: var(--deep); transition: fill 120ms ease; }
+.chart-zero { fill: color-mix(in srgb, var(--ink) 30%, transparent); }
+.chart-col { cursor: pointer; outline: none; }
+.chart-col[data-on] .chart-bar { fill: var(--ink); }
+.chart-col[data-on] .chart-tick { fill: var(--ink); font-weight: 500; }
+.chart-col:focus-visible rect:first-child { stroke: var(--deep); stroke-width: 2; }
+.chart-line { fill: none; stroke: var(--deep); stroke-width: 2; stroke-linejoin: round; }
+.chart-dot { fill: var(--deep); stroke: var(--ground); stroke-width: 2; }
+.sheet .chart-dot { stroke: var(--ground); }
+.chart-table { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.chart-table th, .chart-table td { padding: 6px 4px; text-align: right; border-bottom: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); font-weight: 400; }
+.chart-table th:first-child { text-align: left; }
+.chart-table thead th { font-family: var(--mono); font-size: 0.6875rem; text-transform: uppercase; color: var(--mute); }
+.feel-rows { display: grid; gap: 8px; }
+.feel-row { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr) 2rem; gap: 10px; align-items: center; font-size: 0.9375rem; font-weight: 600; }
+.feel-row .mono { text-align: right; }
+.feel-track { display: block; height: 14px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 28%, transparent); }
+.feel-track i { display: block; height: 100%; min-width: 2px; background: var(--deep); }
 
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -301,6 +374,9 @@ textarea.field { min-height: 140px; resize: vertical; }
   .btn:active, .chip:active, .tile:active, .hero button.w:active, .tabbar button:active { transform: none; }
   .btn-shadow:active { box-shadow: 5px 5px 0 var(--block2); }
   .toast { transition: opacity 200ms ease; @starting-style { opacity: 0; transform: translateX(-50%); } }
+  .toast[data-leaving] { transform: translateX(-50%); }
+  /* Pages cross-fade instead of sliding. */
+  .app[data-nav] .screen { animation: nav-fade 160ms ease backwards; }
 }
 @keyframes bead-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-transparency: reduce) {
@@ -355,7 +431,7 @@ textarea.field { min-height: 140px; resize: vertical; }
 .fig-drift-3 { animation-duration: 23s; animation-delay: -11s; }
 @keyframes fig-drift { from { transform: translateX(-6px); } to { transform: translateX(10px); } }
 @media (prefers-reduced-motion: reduce) { .fig-drift { animation: none; } }
-.seg.wb-seg-sm button { min-height: 40px; padding: 4px 4px; font-size: 0.625rem; line-height: 1.2; text-transform: none; letter-spacing: 0.01em; white-space: normal; overflow-wrap: anywhere; }
+.seg.wb-seg-sm button { min-height: 40px; padding: 4px 4px; font-size: 0.6875rem; line-height: 1.2; text-transform: none; letter-spacing: 0.01em; white-space: normal; overflow-wrap: anywhere; }
 .wb-details summary { cursor: pointer; padding: 6px 0; list-style: none; }
 .wb-details summary::-webkit-details-marker { display: none; }
 .wb-details summary::before { content: '+ '; }

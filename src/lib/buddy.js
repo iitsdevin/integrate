@@ -1,6 +1,6 @@
 // The reflection buddy: Claude, called straight from this device with your own API key.
 // It can look things up through tools: your sits, journal, plan, toolkit and library.
-import { getState, getApiKey, localDate, dayDiff } from './store.js';
+import { getState, getApiKey, localDate, dayDiff, sitLengths } from './store.js';
 import { allPractices, allReadings } from '../data/content.js';
 import { DEFAULT_PLAN } from '../data/daily.js';
 import { searchLibrary, listBooks } from './library.js';
@@ -9,39 +9,63 @@ import { WORKBOOK, MODULES as WB_MODULES, lessonById as wbLesson } from '../data
 import { getPacks } from './packs.js';
 const allWbLessons = () => [...WORKBOOK.lessons, ...getPacks().flatMap((b) => b.lessons.map((l) => ({ ...l, packTitle: b.title })))];
 import { answersText } from '../components/WorkbookTools.jsx';
+import { sseParser, messageBuilder } from './sse.js';
 
 const API = 'https://api.anthropic.com/v1/messages';
 
 export class BuddyError extends Error {}
 
-async function call(body) {
+function failure(status, msg) {
+  if (status === 401) return new BuddyError("That API key didn't work. Check it in Settings.");
+  if (status === 404 || /model/i.test(msg)) return new BuddyError(`The model "${getState().settings.model}" wasn't found. Change it in Settings.`);
+  if (status === 429) return new BuddyError('Too many requests just now. Wait a moment and try again.');
+  if (status === 529 || status >= 500 || /overloaded/i.test(msg)) return new BuddyError('Claude is busy right now. Try again in a minute.');
+  return new BuddyError(msg || 'Something went wrong (' + status + ').');
+}
+
+// One request, streamed. `onText` receives the reply as it is written. `signal` stops it.
+async function call(body, { onText, signal } = {}) {
   const key = getApiKey();
   if (!key) throw new BuddyError('Add your Anthropic API key in Settings first.');
   let res;
   try {
     res = await fetch(API, {
       method: 'POST',
+      signal,
       headers: {
         'content-type': 'application/json',
         'x-api-key': key,
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true',
       },
-      body: JSON.stringify({ model: getState().settings.model || 'claude-sonnet-5-5', ...body }),
+      body: JSON.stringify({ model: getState().settings.model || 'claude-sonnet-5-5', stream: true, ...body }),
     });
-  } catch {
+  } catch (e) {
+    if (e?.name === 'AbortError') throw e;
     throw new BuddyError("Couldn't reach Claude. Check your connection and try again.");
   }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    const msg = err?.error?.message || '';
-    if (res.status === 401) throw new BuddyError("That API key didn't work. Check it in Settings.");
-    if (res.status === 404 || /model/i.test(msg)) throw new BuddyError(`The model "${getState().settings.model}" wasn't found. Change it in Settings.`);
-    if (res.status === 429) throw new BuddyError('Too many requests just now. Wait a moment and try again.');
-    if (res.status === 529 || res.status >= 500) throw new BuddyError('Claude is busy right now. Try again in a minute.');
-    throw new BuddyError(msg || 'Something went wrong (' + res.status + ').');
+    throw failure(res.status, err?.error?.message || '');
   }
-  return res.json();
+  const build = messageBuilder({ onText });
+  const feed = sseParser(build.apply);
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      feed(dec.decode(value, { stream: true }));
+    }
+  } catch (e) {
+    if (e?.name === 'AbortError') throw e;
+    throw new BuddyError('The connection dropped part-way through. Try again.');
+  }
+  feed('\n\n');
+  const msg = build.message();
+  if (msg.error) throw failure(msg.error.type === 'overloaded_error' ? 529 : 500, msg.error.message || '');
+  if (!msg.stop_reason) throw new BuddyError('The connection dropped part-way through. Try again.');
+  return msg;
 }
 
 // ---------- context ----------
@@ -55,6 +79,7 @@ function systemPrompt() {
   return [
     'You are a reflection buddy inside "Integrate", a personal meditation app. You are a practice companion — like a friend who has also sat on the cushion — not a therapist and not a coach selling a programme.',
     'Tone: warm, direct, plain, occasionally poetic, never performative or wellness-speak. Keep replies short to moderate. Ask at most one question. Trust silence.',
+    'Write the way you would in a text to a friend: plain paragraphs. A short list or a little bold is fine when it truly helps; no headings and no tables.',
     'The daily sit is three phases: Connect (a 3-minute somatic practice), Dive (14 minutes with their personal Vedic mantra from The Broad Place), Integrate (3 minutes of open, whole-body awareness). The Toolkit holds Regulation, Somatic, Zen, Kundalini (Desirée Pais), The Broad Place (Jacqui), Imaginal (Rob Burbea), Vajrayana and Earth & kin.',
     'They tend to accumulate practices and courses rather than consolidate. Gently notice this when it shows up, with warmth not judgement. Prefer fewer, smaller, repeatable things. "Coming back counts" — never shame missed days, and never mention streaks.',
     'Use the tools to look things up rather than guessing. When you quote or draw on a book from their library, cite it like (Title, p. 12) using the reference the tool gives. If the library does not cover something, say so; you may then offer what you know generally, clearly marked as general knowledge.',
@@ -63,6 +88,7 @@ function systemPrompt() {
     '',
     `Today is ${new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}. They are in Perth, Western Australia.`,
     `Current plan: ${plan.title} (${plan.from} to ${plan.to}). ${plan.summary}`,
+    (() => { const m = sitLengths(s.settings); return `The daily sit timer is currently set to Connect ${m.connect} min, Dive ${m.dive} min, Integrate ${m.integrate} min.`; })(),
     `Sits in the last 14 days: ${recent}. Total sits recorded: ${s.sits.length}.`,
     `They are doing a course in the Toolkit, "ACT for ADHD": ${MODULES.map((m) => m.no + ' ' + m.name + ' (' + m.lessons.filter((l) => s.course?.done?.[l.id]).length + '/' + m.lessons.length + ' done)').join('; ')}. Their worksheet and reflection answers are journal entries starting "ACT for ADHD". Link what they bring to a lesson or exercise when it genuinely helps (e.g. Leaves on a stream, Dropping anchor, Urge surfing, the Unhooking lab, the step-down), using the course's language: away and towards moves, hooks, unhooking, making room, values, the tiny first step. Never treat ADHD struggles as a willpower problem.`,
     (() => { const v = VALUES.filter((w) => s.course?.values?.[w] === 'very'); const b = DOMAINS.map(([d, n]) => s.course?.bullseye?.[d] ? `${n}: ${s.course.bullseye[d].text || '(no words yet)'} — ${s.course.bullseye[d].score ?? '?'}/10 close` : null).filter(Boolean); return (v.length ? `Their values card sort, matters most: ${v.join(', ')}.` : '') + (b.length ? ` Their bull's-eye: ${b.join('; ')}.` : ''); })(),
@@ -88,6 +114,7 @@ export const TOOLS = [
     input_schema: { type: 'object', properties: {
       title: { type: 'string', description: 'Short, e.g. "Weeks 2–3".' },
       weeks: { type: 'integer' },
+      sit_minutes: { type: 'object', description: 'Optional. Only when the plan changes the length of the daily sit. Using the plan then sets the timer on Today. Leave out to keep the current lengths.', properties: { connect: { type: 'integer', description: '1-10' }, dive: { type: 'integer', description: '3-45' }, integrate: { type: 'integer', description: '1-15' } } },
       summary: { type: 'string', description: 'One sentence.' },
       items: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, text: { type: 'string' } }, required: ['label', 'text'] } },
     }, required: ['title', 'weeks', 'summary', 'items'] } },
@@ -150,29 +177,62 @@ const TOOL_LABELS = {
   search_library: (i) => `searched your books for “${i.query}”`,
 };
 
-// Runs one turn. `api` is the running API transcript. Calls onEvent for each thing to show.
-export async function buddyTurn(api, onEvent) {
+// Runs one turn. `api` is the running API transcript. Calls onEvent for each thing to show:
+//   { role: 'assistant', text, streaming }  text so far for the reply being written
+//   { role: 'tool', text } / { role: 'plan', plan }
+// Returns the new transcript. Throws AbortError if `signal` stops it.
+export async function buddyTurn(api, onEvent, { signal } = {}) {
   let messages = api;
+  // The system prompt and tool list are identical for every round of a turn (and
+  // usually for a whole conversation), so mark them cacheable; the top-level marker
+  // also caches the conversation so far for the next round.
+  const system = [{ type: 'text', text: systemPrompt(), cache_control: { type: 'ephemeral' } }];
   for (let round = 0; round < 7; round++) {
-    const res = await call({ max_tokens: 1400, system: systemPrompt(), tools: TOOLS, messages });
+    let text = '';
+    const res = await call({ max_tokens: 16000, system, tools: TOOLS, messages, cache_control: { type: 'ephemeral' } }, {
+      signal,
+      onText: (t) => { text += t; onEvent({ role: 'assistant', text, streaming: true }); },
+    });
+    if (text.trim()) onEvent({ role: 'assistant', text: text.trim(), streaming: false });
+    if (res.stop_reason === 'refusal') throw new BuddyError("Claude declined to answer that one. Try putting it another way.");
     messages = [...messages, { role: 'assistant', content: res.content }];
     for (const block of res.content) {
-      if (block.type === 'text' && block.text.trim()) onEvent({ role: 'assistant', text: block.text.trim() });
       if (block.type === 'tool_use') {
         if (block.name === 'propose_plan') onEvent({ role: 'plan', plan: { ...block.input, id: block.id } });
         else onEvent({ role: 'tool', text: (TOOL_LABELS[block.name] || (() => block.name))(block.input || {}) });
       }
     }
+    if (res.stop_reason === 'max_tokens') {
+      // Cut off for length: keep what was written, drop any half-made tool call.
+      onEvent({ role: 'tool', text: 'the reply was cut off for length' });
+      const kept = res.content.filter((b) => b.type !== 'tool_use');
+      return kept.some((b) => b.type === 'text' && b.text.trim()) ? [...messages.slice(0, -1), { role: 'assistant', content: kept }] : messages.slice(0, -1);
+    }
     if (res.stop_reason !== 'tool_use') return messages;
     const results = [];
     for (const block of res.content) if (block.type === 'tool_use') {
       let out;
-      try { out = await runTool(block.name, block.input || {}); } catch (e) { out = { error: String(e.message || e) }; }
+      try { out = block.badInput ? { error: 'The tool input was not valid JSON. Call it again.' } : await runTool(block.name, block.input || {}); } catch (e) { out = { error: String(e.message || e) }; }
       results.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify(out) });
     }
     messages = [...messages, { role: 'user', content: results }];
   }
   return messages;
+}
+
+// A stored conversation without its raw transcript (older ones are trimmed to save
+// space) can still be continued: rebuild a plain transcript from what was shown.
+export function transcriptFromDisplay(display) {
+  const out = [];
+  for (const d of display || []) {
+    if (d.role !== 'user' && d.role !== 'assistant') continue;
+    const last = out[out.length - 1];
+    if (last && last.role === d.role) last.content += '\n\n' + d.text;
+    else out.push({ role: d.role, content: d.text });
+  }
+  while (out.length && out[0].role !== 'user') out.shift();
+  while (out.length && out[out.length - 1].role !== 'assistant') out.pop();
+  return out;
 }
 
 // One-shot question to the library: retrieve passages here, ask Claude to answer only from them.
@@ -181,7 +241,7 @@ export async function askLibrary(question, bookId) {
   if (!passages.length) return { answer: null, passages };
   const context = passages.map((p, i) => `[${i + 1}] ${p.title}${p.author ? ' — ' + p.author : ''}, ${p.ref}\n${p.text}`).join('\n\n');
   const res = await call({
-    max_tokens: 900,
+    max_tokens: 8000,
     system: 'You answer questions about books using only the numbered passages provided. Quote briefly where it helps. Cite every claim like (Title, p. 12) using the reference shown. If the passages do not answer the question, say plainly that these books do not seem to cover it. Plain language, no preamble, short paragraphs.',
     messages: [{ role: 'user', content: `Passages:\n\n${context}\n\nQuestion: ${question}` }],
   });

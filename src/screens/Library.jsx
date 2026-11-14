@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { listBooks, addBookFromFile, deleteBook, renameBook, onLibraryChange, searchLibrary, askPersist } from '../lib/library.js';
 import { askLibrary, BuddyError } from '../lib/buddy.js';
 import { getApiKey } from '../lib/store.js';
+import { usePacks } from '../lib/packs.js';
+import Markdown from '../components/Markdown.jsx';
 import { Icon, toast } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 
@@ -16,6 +18,7 @@ export default function Library({ onBack, focusBook, onSettings }) {
   const [edit, setEdit] = useState(null);
   const [confirmDel, setConfirmDel] = useState(false);
   const fileRef = useRef(null), qRef = useRef(null);
+  const no = 11 + usePacks().length; // matches its tile in the Toolkit
 
   useEffect(() => { const load = () => listBooks().then(setBooks).catch(() => setBooks([])); load(); return onLibraryChange(load); }, []);
   useEffect(() => { if (focusBook) { setBookId(focusBook); setTimeout(() => qRef.current?.focus(), 300); } }, [focusBook]);
@@ -59,7 +62,7 @@ export default function Library({ onBack, focusBook, onSettings }) {
     <main className="screen">
       <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={onBack}><Icon.back /> Toolkit</button>
       <header>
-        <p className="mono caps">09 — kept on this phone, never uploaded</p>
+        <p className="mono caps">{no} — kept on this phone, never uploaded</p>
         <h1 className="word" style={{ fontSize: 'clamp(4.4rem, 23vw, 6rem)', marginTop: 6 }}>library</h1>
       </header>
 
@@ -84,7 +87,7 @@ export default function Library({ onBack, focusBook, onSettings }) {
           {result.noKey && (
             <p className="notice">Here are the closest passages. To get an answer written from them, add your Anthropic API key in <button type="button" style={{ textDecoration: 'underline' }} onClick={onSettings}>Settings</button>.</p>
           )}
-          {result.answer && <div className="prose" style={{ whiteSpace: 'pre-wrap' }}>{result.answer}</div>}
+          {result.answer && <Markdown className="prose" text={result.answer} />}
           {result.answer === null && !result.noKey && !result.error && <p className="notice">Nothing in {current ? current.title : 'your books'} matched. Try other words, or a different book.</p>}
           {result.passages?.length > 0 && (
             <details className="card">

@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import Sheet from '../components/Sheet.jsx';
 import { toast } from '../components/bits.jsx';
-import { useStore, updateSettings, getApiKey, setApiKey, DEFAULT_SETTINGS, lastSaveFailed } from '../lib/store.js';
+import { useStore, updateSettings, getApiKey, setApiKey, DEFAULT_SETTINGS, lastSaveFailed, sitLengths, SIT_LIMITS } from '../lib/store.js';
 import { SCHEMES, resolveDark } from '../lib/theme.js';
 import { SOUNDS, unlockAudio, ring, preloadBells } from '../lib/bells.js';
 import { shareOrDownload, importText, daysSinceBackup } from '../lib/backup.js';
 import { storageEstimate, askPersist } from '../lib/library.js';
 import { usePacks, importPackText, removePack } from '../lib/packs.js';
+
+const MODELS = [['claude-sonnet-5-5', 'Claude Sonnet 5.5 — quick, the default'], ['claude-opus-5-5', 'Claude Opus 5.5 — more thorough, costs more'], ['claude-haiku-5-5', 'Claude Haiku 5.5 — fastest, cheapest']];
 
 export default function Settings({ open, onClose }) {
   const settings = useStore((s) => s.settings);
@@ -28,6 +30,7 @@ export default function Settings({ open, onClose }) {
   useEffect(() => { if (open) { setHasKey(!!getApiKey()); setAbout(settings.aboutMe); storageEstimate().then(setStore); setMsg(''); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dark = resolveDark(settings.mode);
+  const mins = sitLengths(settings);
 
   function doImport(text) {
     try {
@@ -61,6 +64,19 @@ export default function Settings({ open, onClose }) {
           </div>
         </section>
 
+        <section className="stack" aria-labelledby="lenH">
+          <h3 id="lenH" className="mono caps">Daily sit · {mins.connect + mins.dive + mins.integrate} minutes</h3>
+          {[['connect', 'Connect'], ['dive', 'Dive'], ['integrate', 'Integrate']].map(([k, name]) => (
+            <div key={k} className="stepper">
+              <span>{name}</span>
+              <button type="button" className="btn icon-btn" aria-label={`${name}: one minute less`} disabled={mins[k] <= SIT_LIMITS[k][0]} onClick={() => updateSettings({ sit: { ...mins, [k]: mins[k] - 1 } })}>−</button>
+              <output className="mono" aria-live="polite">{mins[k]} min</output>
+              <button type="button" className="btn icon-btn" aria-label={`${name}: one minute more`} disabled={mins[k] >= SIT_LIMITS[k][1]} onClick={() => updateSettings({ sit: { ...mins, [k]: mins[k] + 1 } })}>+</button>
+            </div>
+          ))}
+          <p className="mono soft">A plan drafted with your buddy can set these too.</p>
+        </section>
+
         <section className="stack" aria-labelledby="bellH">
           <h3 id="bellH" className="mono caps">Bell</h3>
           <div className="chips">
@@ -91,7 +107,10 @@ export default function Settings({ open, onClose }) {
             </>
           )}
           <label className="mono caps mute" htmlFor="modelIn" style={{ marginTop: 6 }}>Model</label>
-          <input id="modelIn" className="field" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={settings.model} onChange={(e) => updateSettings({ model: e.target.value.trim() || DEFAULT_SETTINGS.model })} />
+          <select id="modelIn" className="field" value={settings.model} onChange={(e) => updateSettings({ model: e.target.value || DEFAULT_SETTINGS.model })}>
+            {MODELS.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            {!MODELS.some(([id]) => id === settings.model) && <option value={settings.model}>{settings.model}</option>}
+          </select>
         </section>
 
         <section className="stack" aria-labelledby="backupH">

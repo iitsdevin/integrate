@@ -3,6 +3,7 @@ import { COURSE, MODULES, ALL_LESSONS, NEEDS } from '../data/course.js';
 import { useStore, addEntry, shortDate } from '../lib/store.js';
 import { Icon, Spark, toast } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
+import { useBackLayer } from '../lib/history.js';
 import { courseState, setCourse, Worksheet, Check, Hexaflex, CardSort, Bullseye, DefuseLab, StepDown, Player } from '../components/CourseTools.jsx';
 
 const KIND = { learn: 'Read', metaphor: 'Metaphor', exercise: 'Guided', worksheet: 'Worksheet', tool: 'Tool', check: 'Check' };
@@ -26,6 +27,9 @@ export default function Course({ onBack }) {
   const practices = ALL_LESSONS.filter((l) => l.kind === 'exercise' || l.tool === 'defuse');
 
   useEffect(() => { window.scrollTo(0, 0); }, [mod]);
+  // Back steps out of a module or a guided practice before it leaves this page.
+  useBackLayer(!!mod, () => setMod(null));
+  useBackLayer(!!playing, () => setPlaying(null));
 
   const openLesson = (id) => setOpen(id);
   const finishExercise = (l) => {

@@ -3,21 +3,13 @@ import { ring, audioUnlocked, unlockAudio } from '../lib/bells.js';
 import { setThemeColor } from '../lib/theme.js';
 import { Spark } from '../components/bits.jsx';
 import { REST } from '../data/daily.js';
+import { total, locate, restPlan } from '../lib/sit.js';
+import { useBackLayer } from '../lib/history.js';
 
 const KEY = 'bmo2.active';
 export const saveActive = (a) => { try { a ? localStorage.setItem(KEY, JSON.stringify(a)) : localStorage.removeItem(KEY); } catch { /* private mode */ } };
 export const loadActive = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } };
-const total = (ps) => ps.reduce((a, p) => a + p.min, 0) * 60;
 const pad = (n) => String(n).padStart(2, '0');
-
-function locate(active, el) {
-  let acc = 0, idx = 0;
-  for (; idx < active.phases.length - 1; idx++) {
-    if (el < acc + active.phases[idx].min * 60) break;
-    acc += active.phases[idx].min * 60;
-  }
-  return { idx, acc };
-}
 
 export default function Sit({ active: initial, bell, onEnd }) {
   const [active, setActive] = useState(initial);
@@ -84,13 +76,20 @@ export default function Sit({ active: initial, bell, onEnd }) {
   }
 
   function rough() {
-    const { idx, acc } = locate(active, el);
-    const kept = active.phases.slice(0, idx);
-    kept.push({ ...active.phases[idx], min: Math.max(0.02, (el - acc) / 60) });
-    kept.push({ label: 'Rest', min: 5, text: REST });
-    const next = { ...active, phases: kept, idx: kept.length - 1, rough: true };
+    const next = restPlan(active, el, REST);
     saveActive(next); setActive(next);
   }
+
+  // The phone's Back button never ends a sit by accident: the first press arms Stop,
+  // a second press while it is armed stops, exactly like tapping the button twice.
+  const [backKey, setBackKey] = useState(0);
+  const armedRef = useRef(false);
+  armedRef.current = stopArmed;
+  useBackLayer(true, () => {
+    if (armedRef.current) { finish(false); return; }
+    setStopArmed(true);
+    setBackKey((k) => k + 1); // re-open the layer so the next Back comes here too
+  }, backKey);
 
   useEffect(() => {
     if (!stopArmed) return;

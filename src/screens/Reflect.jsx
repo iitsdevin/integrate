@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { useStore, addEntry, updateEntry, removeEntry, removeSit, setCheckin, setPlan, shortDate, timeOf } from '../lib/store.js';
+import { useStore, addEntry, updateEntry, removeEntry, removeSit, setCheckin, setPlan, updateSettings, DEFAULT_SETTINGS, shortDate, timeOf } from '../lib/store.js';
 import { DEFAULT_PLAN } from '../data/daily.js';
-import { planWeek } from '../lib/backup.js';
+import { planWeek, checkinKey, checkinWeek } from '../lib/backup.js';
+import Patterns from '../components/Patterns.jsx';
 import { Spark, Icon, toast } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 
@@ -16,8 +17,10 @@ export default function Reflect({ onBuddy }) {
   const [planOpen, setPlanOpen] = useState(false);
   const [limit, setLimit] = useState(30);
   const plan = s.plan || DEFAULT_PLAN;
-  const wk = planWeek();
-  const wkKey = wk ? 'W' + wk : null;
+  const [patterns, setPatterns] = useState(false);
+  const [q, setQ] = useState('');
+  const wk = planWeek(plan);
+  const wkKey = wk ? checkinKey(plan, wk) : null;
   const thisCheckin = wkKey ? s.checkins[wkKey] : null;
 
   // One timeline: notes, sit notes, sits without notes, check-ins.
@@ -29,6 +32,13 @@ export default function Reflect({ onBuddy }) {
     Object.entries(s.checkins).forEach(([k, c]) => c.at && rows.push({ type: 'checkin', at: c.at, week: k, c }));
     return rows.sort((a, b) => (a.at < b.at ? 1 : -1));
   }, [s.journal, s.sits, s.checkins]);
+
+  // Search looks through note text and the sit's label and feel.
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = !words.length ? timeline : timeline.filter((row) => {
+    const hay = [row.entry?.text, row.sit?.label, row.sit?.feel, row.sit?.rough ? 'rough' : '', row.type === 'checkin' ? 'check-in' : ''].join(' ').toLowerCase();
+    return words.every((w) => hay.includes(w));
+  });
 
   const sitMeta = (x) => [shortDate(x.at), timeOf(x.at).toUpperCase(), (x.label || 'Sit').toUpperCase(), x.minutes ? x.minutes + '′' : null, x.feel ? x.feel.toUpperCase() : null, x.rough ? 'ROUGH' : null].filter(Boolean).join(' · ');
 
@@ -54,7 +64,7 @@ export default function Reflect({ onBuddy }) {
       </section>
 
       <button type="button" className="card card-lime" style={{ textAlign: 'left', border: '2px solid var(--ink)' }} onClick={() => setPlanOpen(true)}>
-        <span className="between mono-s caps"><span>Your plan · {plan.title}</span><span>{wk && !s.plan && wk <= 8 ? `WK ${String(wk).padStart(2, '0')}/08` : ''}</span></span>
+        <span className="between mono-s caps"><span>Your plan · {plan.title}</span><span>{wk && plan.weeks ? `WK ${String(wk).padStart(2, '0')}/${String(plan.weeks).padStart(2, '0')}` : ''}</span></span>
         <span style={{ display: 'block', fontWeight: 700, fontSize: '1.125rem', lineHeight: 1.25, margin: '6px 0 4px' }}>{plan.summary}</span>
         <span className="mono">{plan.source === 'default' ? 'start nothing new until 31 dec' : `${plan.from} → ${plan.to}`}</span>
       </button>
@@ -66,17 +76,32 @@ export default function Reflect({ onBuddy }) {
         </button>
       )}
 
+      {s.sits.length > 0 && (
+        <button type="button" className="card between" style={{ textAlign: 'left' }} onClick={() => setPatterns(true)}>
+          <span><span className="mono-s caps">Patterns</span><span style={{ display: 'block', fontWeight: 700, marginTop: 2 }}>What your weeks have looked like.</span></span>
+          <Icon.arrow />
+        </button>
+      )}
+
       <section aria-labelledby="journalH">
         <div className="group-title">
           <h2 id="journalH">Journal</h2>
           <button type="button" className="btn btn-mono" onClick={() => { setDraft(''); setWriting(true); }}><Icon.plus /> New entry</button>
         </div>
         {!timeline.length && <p className="group-note">Your sits, notes and check-ins will gather here.</p>}
-        {timeline.slice(0, limit).map((row) => {
+        {timeline.length > 6 && (
+          <div className="search" style={{ marginTop: 12 }}>
+            <Icon.search />
+            <label className="sr" htmlFor="jq">Search your journal</label>
+            <input id="jq" type="search" className="field" value={q} onChange={(e) => { setQ(e.target.value); setLimit(30); }} placeholder="Search notes and sits" enterKeyHint="search" autoCapitalize="none" />
+          </div>
+        )}
+        {words.length > 0 && <p className="group-note" role="status">{shown.length ? `${shown.length} match${shown.length === 1 ? '' : 'es'}` : 'Nothing matches that.'}</p>}
+        {shown.slice(0, limit).map((row) => {
           if (row.type === 'checkin') return (
             <div key={'c' + row.week} className="entry">
-              <p className="mono-s mute">{shortDate(row.at)} · WEEK {row.week.slice(1)} CHECK-IN</p>
-              <p>{[row.c.back ? 'Came back to it' : 'Didn’t come back much', row.c.settled !== undefined ? `settled ${row.c.settled}/10` : null, row.c.connected !== undefined ? `connected ${row.c.connected}/10` : null].filter(Boolean).join(' · ')}</p>
+              <p className="mono-s mute">{shortDate(row.at)} · WEEK {checkinWeek(row.week)} CHECK-IN</p>
+              <p>{[row.c.back ? 'Came back to it' : 'Didn’t come back much', row.c.settled != null ? `settled ${row.c.settled}/10` : null, row.c.connected != null ? `connected ${row.c.connected}/10` : null].filter(Boolean).join(' · ')}</p>
             </div>
           );
           if (row.type === 'sit') return (
@@ -92,7 +117,7 @@ export default function Reflect({ onBuddy }) {
             </button>
           );
         })}
-        {timeline.length > limit && <button type="button" className="btn btn-block" style={{ marginTop: 14 }} onClick={() => setLimit(limit + 30)}>Show older</button>}
+        {shown.length > limit && <button type="button" className="btn btn-block" style={{ marginTop: 14 }} onClick={() => setLimit(limit + 30)}>Show older</button>}
       </section>
 
       <Sheet open={writing} onClose={() => setWriting(false)} title="new entry" kicker={shortDate(new Date().toISOString())}>
@@ -111,6 +136,10 @@ export default function Reflect({ onBuddy }) {
         {checkin && <Checkin week={wkKey} initial={thisCheckin} onDone={() => { setCheckinOpen(false); toast('Check-in saved'); }} />}
       </Sheet>
 
+      <Sheet open={patterns} onClose={() => setPatterns(false)} title="patterns" kicker="No streaks. Just the shape of it.">
+        {patterns && <Patterns sits={s.sits} checkins={s.checkins} />}
+      </Sheet>
+
       <Sheet open={planOpen} onClose={() => setPlanOpen(false)} title={plan.title.toLowerCase()} kicker="Your plan">
         <div className="stack">
           <p style={{ fontWeight: 700, fontSize: '1.125rem' }}>{plan.summary}</p>
@@ -121,7 +150,7 @@ export default function Reflect({ onBuddy }) {
           </div>
           <p className="mono soft">{plan.from} → {plan.to}{plan.source === 'buddy' ? ' · drafted with your buddy' : ''}</p>
           <button type="button" className="btn btn-ink btn-block" onClick={() => { setPlanOpen(false); onBuddy('plan my next weeks'); }}>Rework it with my buddy</button>
-          {s.plan && <button type="button" className="btn btn-block" onClick={() => { setPlan(null); setPlanOpen(false); toast('Back to the 8-week plan'); }}>Go back to the 8-week plan</button>}
+          {s.plan && <button type="button" className="btn btn-block" onClick={() => { setPlan(null); updateSettings({ sit: { ...DEFAULT_SETTINGS.sit } }); setPlanOpen(false); toast('Back to the 8-week plan'); }}>Go back to the 8-week plan</button>}
         </div>
       </Sheet>
     </main>
@@ -129,7 +158,6 @@ export default function Reflect({ onBuddy }) {
 }
 
 function EditEntry({ editing, setEditing }) {
-  const [confirm, setConfirm] = useState(false);
   const { sit, entry } = editing;
   return (
     <div className="stack">
@@ -141,27 +169,31 @@ function EditEntry({ editing, setEditing }) {
         else if (text) addEntry({ text, kind: 'sit', sitId: sit.id, at: sit.at });
         setEditing(null);
       }}>Save</button>
+      {/* One tap, with Undo: quicker than a confirmation and nothing is lost by a slip. */}
       <button type="button" className="btn btn-block" onClick={() => {
-        if (!confirm) { setConfirm(true); setTimeout(() => setConfirm(false), 3000); return; }
-        if (sit) removeSit(sit.id); else if (entry) removeEntry(entry.id);
+        const undo = sit ? removeSit(sit.id) : entry ? removeEntry(entry.id) : null;
         setEditing(null);
-      }}>{confirm ? 'Tap again to remove' : sit ? 'Remove this sit' : 'Remove this note'}</button>
+        if (undo) toast(sit ? (entry ? 'Sit and its note removed.' : 'Sit removed.') : 'Note removed.', { action: 'Undo', onAction: undo });
+      }}>{sit ? 'Remove this sit' : 'Remove this note'}</button>
     </div>
   );
 }
 
 function Checkin({ week, initial, onDone }) {
-  const [c, setC] = useState({ back: false, settled: 5, connected: 5, ...(initial || {}) });
+  // Scores start unset rather than at 5, so the saved number is one you chose.
+  const [c, setC] = useState({ back: false, settled: null, connected: null, ...(initial || {}) });
   return (
     <div className="stack" style={{ gap: 16 }}>
       <label className="check"><input type="checkbox" checked={!!c.back} onChange={(e) => setC({ ...c, back: e.target.checked })} /><span>I came back to it</span></label>
       {[['settled', 'How settled do I feel, from 0 to 10?'], ['connected', 'How connected do I feel, from 0 to 10?']].map(([k, q]) => (
         <label key={k} className="slider"><span>{q}</span>
-          <input type="range" min="0" max="10" step="1" value={c[k]} onChange={(e) => setC({ ...c, [k]: Number(e.target.value) })} />
-          <output>{c[k]}</output>
+          <input type="range" min="0" max="10" step="1" value={c[k] ?? 5} data-unset={c[k] == null || undefined}
+            aria-valuetext={c[k] == null ? 'not set' : `${c[k]} out of 10`}
+            onChange={(e) => setC({ ...c, [k]: Number(e.target.value) })} onPointerDown={() => { if (c[k] == null) setC({ ...c, [k]: 5 }); }} />
+          <output>{c[k] ?? '–'}</output>
         </label>
       ))}
-      <button type="button" className="btn btn-ink btn-block" onClick={() => { setCheckin(week, c); onDone(); }}>Save check-in</button>
+      <button type="button" className="btn btn-ink btn-block" onClick={() => { setCheckin(week, { back: c.back, ...(c.settled != null ? { settled: c.settled } : {}), ...(c.connected != null ? { connected: c.connected } : {}) }); onDone(); }}>Save check-in</button>
     </div>
   );
 }

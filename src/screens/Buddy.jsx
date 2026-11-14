@@ -1,15 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import Sheet from '../components/Sheet.jsx';
 import { Icon, toast } from '../components/bits.jsx';
-import { buddyTurn, BuddyError } from '../lib/buddy.js';
-import { getApiKey, setApiKey, getState, setState, setPlan, uid, localDate } from '../lib/store.js';
+import { buddyTurn, BuddyError, transcriptFromDisplay } from '../lib/buddy.js';
+import Markdown from '../components/Markdown.jsx';
+import { getApiKey, setApiKey, getState, setState, setPlan, updateSettings, sitLengths, uid, localDate } from '../lib/store.js';
 
 const addDays = (date, n) => { const d = new Date(date + 'T12:00:00'); d.setDate(d.getDate() + n); return localDate(d); };
 
 function saveSession(sess) {
   setState((s) => {
     const others = s.buddy.sessions.filter((x) => x.id !== sess.id);
-    return { ...s, buddy: { sessions: [sess, ...others].slice(0, 20) } };
+    // Raw API transcripts (which hold everything the buddy looked up) are kept only for
+    // the three most recent conversations; older ones keep what was shown on screen.
+    const sessions = [sess, ...others].slice(0, 20).map((x, i) => (i < 3 ? x : { ...x, api: null }));
+    return { ...s, buddy: { sessions } };
   });
 }
 
@@ -20,7 +24,7 @@ export default function Buddy({ open, onClose, starter, onSettings }) {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState(false);
-  const endRef = useRef(null), taRef = useRef(null), started = useRef(null);
+  const endRef = useRef(null), taRef = useRef(null), started = useRef(null), abort = useRef(null);
 
   useEffect(() => { if (open) setHasKey(!!getApiKey()); }, [open]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }, [sess, busy]);
@@ -40,24 +44,52 @@ export default function Buddy({ open, onClose, starter, onSettings }) {
     const t = text.trim();
     if (!t || busy) return;
     let cur = base || { id: uid(), at: new Date().toISOString(), title: t.slice(0, 60), display: [], api: [] };
-    cur = { ...cur, display: [...cur.display, { role: 'user', text: t }], api: [...cur.api, { role: 'user', content: t }] };
+    const before = cur.api || transcriptFromDisplay(cur.display); // the transcript to fall back to
+    cur = { ...cur, display: [...cur.display, { role: 'user', text: t }], api: [...before, { role: 'user', content: t }] };
     setSess(cur); setInput(''); setBusy(true);
+    if (taRef.current) taRef.current.style.height = 'auto';
+    const ctl = new AbortController();
+    abort.current = ctl;
+    // The reply arrives a few words at a time: keep replacing the bubble being written.
+    const show = (ev) => {
+      const d = cur.display, last = d[d.length - 1];
+      const display = ev.role === 'assistant' && last?.role === 'assistant' && last.streaming ? [...d.slice(0, -1), ev] : [...d, ev];
+      cur = { ...cur, display }; setSess(cur);
+    };
+    const settle = (extra) => { cur = { ...cur, display: [...cur.display.map((x) => (x.streaming ? { ...x, streaming: false } : x)), ...extra] }; };
     try {
-      const api = await buddyTurn(cur.api, (ev) => { cur = { ...cur, display: [...cur.display, ev] }; setSess(cur); });
+      const api = await buddyTurn(cur.api, show, { signal: ctl.signal });
+      settle([]);
       cur = { ...cur, api };
       setSess(cur); saveSession(cur);
     } catch (e) {
-      cur = { ...cur, display: [...cur.display, { role: 'error', text: e instanceof BuddyError ? e.message : 'Something went wrong. Try again.' }], api: cur.api.slice(0, -1) };
+      // Stopped or failed: what was written stays on screen; the transcript goes back
+      // to before this message so the next one starts clean.
+      const stopped = e?.name === 'AbortError';
+      settle([stopped ? { role: 'tool', text: 'stopped' } : { role: 'error', text: e instanceof BuddyError ? e.message : 'Something went wrong. Try again.', retry: t }]);
+      cur = { ...cur, api: before };
       setSess(cur);
-    } finally { setBusy(false); }
+      if (stopped) saveSession(cur);
+    } finally { setBusy(false); abort.current = null; }
+  }
+
+  // Try again: take the failed message and its error off the screen, then resend it.
+  function retry(i) {
+    const text = sess.display[i].retry;
+    let j = i - 1;
+    while (j >= 0 && !(sess.display[j].role === 'user' && sess.display[j].text === text)) j--;
+    const base = { ...sess, display: j >= 0 ? sess.display.slice(0, j) : sess.display.slice(0, i) };
+    send(text, base);
   }
 
   function acceptPlan(ev, i) {
     const p = ev.plan, from = localDate();
-    setPlan({ id: p.id, title: p.title, summary: p.summary, items: p.items, weeks: p.weeks, from, to: addDays(from, (p.weeks || 2) * 7 - 1), source: 'buddy' });
+    setPlan({ id: p.id, title: p.title, summary: p.summary, items: p.items, weeks: p.weeks || 2, from, to: addDays(from, (p.weeks || 2) * 7 - 1), source: 'buddy' });
+    // A plan that changes the sit length sets the timer on Today.
+    if (p.sit_minutes) updateSettings({ sit: sitLengths({ sit: { ...sitLengths(), ...p.sit_minutes } }) });
     const display = sess.display.map((d, j) => (j === i ? { ...d, used: true } : d));
     const next = { ...sess, display }; setSess(next); saveSession(next);
-    toast('Plan saved. It shows on Reflect.');
+    toast(p.sit_minutes ? 'Plan saved. Today’s sit now follows it.' : 'Plan saved. It shows on Reflect.');
   }
 
   const sessions = getState().buddy.sessions;
@@ -70,7 +102,9 @@ export default function Buddy({ open, onClose, starter, onSettings }) {
           <textarea id="buddyIn" ref={taRef} rows={1} value={input} placeholder="Say what's here…" enterKeyHint="send"
             onChange={(e) => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(140, e.target.scrollHeight) + 'px'; }}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)) { e.preventDefault(); send(input); } }} />
-          <button type="submit" className="btn btn-lime icon-btn" style={{ width: 48, height: 48 }} disabled={busy || !input.trim()} aria-label="Send"><Icon.arrow /></button>
+          {busy
+            ? <button type="button" className="btn btn-lime icon-btn" style={{ width: 48, height: 48 }} onClick={() => abort.current?.abort()} aria-label="Stop the reply"><Icon.stop /></button>
+            : <button type="submit" className="btn btn-lime icon-btn" style={{ width: 48, height: 48 }} disabled={!input.trim()} aria-label="Send"><Icon.arrow /></button>}
         </form>
       ) : null}>
       {!hasKey ? (
@@ -104,12 +138,18 @@ export default function Buddy({ open, onClose, starter, onSettings }) {
           {!sess?.display.length && !busy && <p className="soft">Say what you’re sitting with, ask about a book, or ask for a plan. It will look at your history before answering.</p>}
           {sess?.display.map((d, i) => {
             if (d.role === 'user') return <p key={i} className="msg-user">{d.text}</p>;
-            if (d.role === 'assistant') return <p key={i} className="msg-bot">{d.text}</p>;
+            if (d.role === 'assistant') return <Markdown key={i} className="msg-bot" text={d.text} />;
             if (d.role === 'tool') return <p key={i} className="msg-tool">↳ {d.text}</p>;
-            if (d.role === 'error') return <p key={i} className="notice" role="alert">{d.text}</p>;
+            if (d.role === 'error') return (
+              <div key={i} className="notice stack" role="alert">
+                <p>{d.text}</p>
+                {d.retry && !busy && i === sess.display.length - 1 && <button type="button" className="btn btn-mono" style={{ alignSelf: 'flex-start' }} onClick={() => retry(i)}>Try again</button>}
+              </div>
+            );
             if (d.role === 'plan') return (
               <div key={i} className="plan-card">
                 <p className="mono-s caps">Draft — {d.plan.title} · {d.plan.weeks} week{d.plan.weeks === 1 ? '' : 's'}</p>
+                {d.plan.sit_minutes && (() => { const m = sitLengths({ sit: { ...sitLengths(), ...d.plan.sit_minutes } }); return <p className="mono">Daily sit: connect {m.connect} · dive {m.dive} · integrate {m.integrate} min</p>; })()}
                 <p style={{ fontWeight: 700 }}>{d.plan.summary}</p>
                 {d.plan.items?.map((it, j) => <p key={j} style={{ fontSize: '0.9375rem' }}><b>{it.label}</b> · {it.text}</p>)}
                 {d.used ? <p className="mono caps" style={{ marginTop: 6 }}>✓ This is your plan now</p> : (
@@ -122,7 +162,7 @@ export default function Buddy({ open, onClose, starter, onSettings }) {
             );
             return null;
           })}
-          {busy && <span className="thinking" aria-label="Thinking"><i /><i /><i /></span>}
+          {busy && !sess?.display[sess.display.length - 1]?.streaming && <span className="thinking" role="status" aria-label="Thinking"><i /><i /><i /></span>}
           <div ref={endRef} />
         </div>
       )}

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CATEGORIES, findCategory } from '../data/content.js';
+import { CATEGORIES, findCategory, allPractices, allReadings } from '../data/content.js';
 import { useStore, setCheck, localDate } from '../lib/store.js';
-import { kriyaSit, timedPractice } from '../data/daily.js';
+import { kriyaSit } from '../data/daily.js';
+import PracticeSheet from '../components/PracticeSheet.jsx';
 import { listBooks, onLibraryChange } from '../lib/library.js';
 import { Spark, Icon, PracticeBody } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
@@ -18,7 +19,7 @@ export default function Toolkit({ view, onView, onBegin, onAskBook }) {
   if (view?.startsWith('pack-')) return <PackView view={view} onView={onView} />;
   const cat = view && findCategory(view);
   if (cat) return <Category cat={cat} onBack={() => onView(null)} onBegin={onBegin} onAskBook={onAskBook} />;
-  return <Grid onView={onView} />;
+  return <Grid onView={onView} onBegin={onBegin} />;
 }
 
 function PackView({ view, onView }) {
@@ -33,8 +34,27 @@ function PackView({ view, onView }) {
   );
 }
 
-function Grid({ onView }) {
+// Everything searchable in one flat list: practices, readings, course and workbook lessons.
+function useSearch(q, packs) {
+  return useMemo(() => {
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return null;
+    const hit = (...parts) => { const hay = parts.filter(Boolean).join(' ').toLowerCase(); return words.every((w) => hay.includes(w)); };
+    const out = [];
+    for (const x of allPractices()) if (hit(x.name, x.summary, x.who, x.category, x.group, x.when)) out.push({ key: 'p-' + x.id, kind: 'practice', title: x.name, meta: x.mins || '', sub: `${x.category} · ${x.summary || x.who || ''}`, item: x });
+    for (const x of allReadings()) if (hit(x.title, x.author, x.seed, x.category)) out.push({ key: 'r-' + x.id, kind: 'reading', title: x.title, meta: 'READING', sub: `${x.category} · ${x.author}`, view: x.categoryId });
+    for (const l of COURSE.lessons) if (hit(l.title, l.short, l.moduleName)) out.push({ key: 'c-' + l.id, kind: 'lesson', title: l.title, meta: 'COURSE', sub: `ACT for ADHD · ${l.moduleName}`, view: COURSE.id });
+    for (const l of WORKBOOK.lessons) if (hit(l.title, l.short, l.moduleName)) out.push({ key: 'w-' + l.id, kind: 'lesson', title: l.title, meta: 'WORKBOOK', sub: `Neurodivergence skills · ${l.moduleName}`, view: WORKBOOK.id });
+    for (const b of packs) for (const l of b.lessons) if (hit(l.title, l.short, b.title)) out.push({ key: 'k-' + b.id + l.id, kind: 'lesson', title: l.title, meta: 'PRIVATE', sub: b.title, view: b.view });
+    return out.slice(0, 40);
+  }, [q, packs]);
+}
+
+function Grid({ onView, onBegin }) {
   const packs = usePacks();
+  const [q, setQ] = useState('');
+  const [practice, setPractice] = useState(null);
+  const results = useSearch(q, packs);
   const wbAll = useStore((s) => s.wb?.done) || {};
   const [books, setBooks] = useState([]);
   const done = useStore((s) => s.course?.done) || {};
@@ -60,6 +80,28 @@ function Grid({ onView }) {
         <h1 className="word title-xl" style={{ marginTop: 6 }}>toolkit</h1>
         <Spark size={18} style={{ right: 8, top: 28 }} />
       </header>
+      <div className="search">
+        <Icon.search />
+        <label className="sr" htmlFor="tkq">Search the toolkit</label>
+        <input id="tkq" type="search" className="field" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search practices, readings, lessons" enterKeyHint="search" autoCapitalize="none" autoCorrect="off" />
+      </div>
+      <PracticeSheet item={practice} onClose={() => setPractice(null)} onBegin={onBegin} />
+      {results && (
+        <section aria-label="Search results">
+          <p className="group-note" role="status">{results.length ? `${results.length}${results.length === 40 ? '+' : ''} found` : 'Nothing matches that. Try a single word, like “breath” or “walking”.'}</p>
+          <div className="list">
+            {results.map((r) => (
+              <button key={r.key} type="button" className="item" onClick={() => (r.kind === 'practice' ? setPractice(r.item) : onView(r.view))}>
+                <span className="n">{r.kind === 'practice' ? '●' : '→'}</span>
+                <span className="t">{r.title}</span>
+                <span className="m">{r.meta}</span>
+                <span className="d">{r.sub}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+      {!results && <>
       <nav className="tiles" aria-label="Toolkit categories">
         <div className="col">{left.map((c, i) => tile(c, i, 0))}</div>
         <div className="col">{right.map((c, i) => tile(c, i, 1))}</div>
@@ -101,6 +143,7 @@ function Grid({ onView }) {
         </span>
         <Icon.arrow />
       </button>
+      </>}
     </main>
   );
 }
@@ -213,20 +256,8 @@ function Category({ cat, onBack, onBegin, onAskBook }) {
         </div>
       )}
 
-      <Sheet open={!!open} onClose={() => setOpen(null)} title={open?.type === 'reading' ? open?.item.title : open?.item.name} kicker={cat.name}>
-        {open?.type === 'practice' && (
-          <>
-            <PracticeBody item={open.item} />
-            <div className="stack" style={{ marginTop: 18 }}>
-              {open.item.timer && (
-                <button type="button" className="btn btn-ink btn-block" onClick={() => { const it = open.item; setOpen(null); onBegin(timedPractice(it.name, it.timer, it.summary)); }}>
-                  Time it · {it_min(open.item.timer)}
-                </button>
-              )}
-              {open.item.link && <a className="btn btn-block" href={open.item.link.url} target="_blank" rel="noopener">{open.item.link.label} ↗</a>}
-            </div>
-          </>
-        )}
+      <PracticeSheet item={open?.type === 'practice' ? open.item : null} kicker={cat.name} onClose={() => setOpen(null)} onBegin={onBegin} />
+      <Sheet open={open?.type === 'reading'} onClose={() => setOpen(null)} title={open?.type === 'reading' ? open.item.title : ''} kicker={cat.name}>
         {open?.type === 'reading' && (
           <>
             <div className="prose">
@@ -245,4 +276,3 @@ function Category({ cat, onBack, onBegin, onAskBook }) {
     </main>
   );
 }
-const it_min = (m) => `${m} min`;

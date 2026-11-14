@@ -1,6 +1,6 @@
 // Export and import. Your API key and your books are never included.
 import { getState, setState, uid, localDate, dayDiff } from './store.js';
-import { PLAN_START } from '../data/daily.js';
+import { PLAN_START, DEFAULT_PLAN } from '../data/daily.js';
 
 export function exportJson() {
   const s = getState();
@@ -63,6 +63,7 @@ export function importText(text) {
   if (raw?.format === 'bmo-artifact-v1' || raw?.days) inc = fromArtifact(raw);
   else if (raw?.format === 'bmo2' && raw.data) inc = raw.data;
   else throw new Error("That doesn't look like an Integrate backup.");
+  if (!inc || typeof inc !== 'object' || (inc.sits && !Array.isArray(inc.sits)) || (inc.journal && !Array.isArray(inc.journal))) throw new Error("That backup is damaged and can't be read.");
 
   const s = getState();
   const haveSit = new Set(s.sits.map((x) => x.at));
@@ -77,6 +78,7 @@ export function importText(text) {
     checkins: { ...(inc.checkins || {}), ...s.checkins },
     checks: { ...(inc.checks || {}), ...s.checks },
     plan: s.plan || inc.plan || null,
+    pins: [...new Set([...(s.pins || []), ...(Array.isArray(inc.pins) ? inc.pins : [])])],
     backup: s.backup || null,
     course: Object.fromEntries(['done', 'stepdown', 'values', 'bullseye', 'sheets', 'practiced', 'quiz'].map((k) => [k, { ...(inc.course?.[k] || {}), ...(s.course?.[k] || {}) }])),
     wb: (() => { const a = inc.wb || {}, b = s.wb || {}; const ans = { ...(a.ans || {}) }; for (const [l, v] of Object.entries(b.ans || {})) ans[l] = { ...(ans[l] || {}), ...v }; return { done: { ...(a.done || {}), ...(b.done || {}) }, practiced: { ...(a.practiced || {}), ...(b.practiced || {}) }, saved: { ...(a.saved || {}), ...(b.saved || {}) }, ans }; })(),
@@ -86,9 +88,16 @@ export function importText(text) {
   return { sits: newSits.length, entries: newEntries.length };
 }
 
-// Week number of the 8-week plan for a date (1-based), or null outside it.
-export function planWeek(date = localDate()) {
-  const d = dayDiff(PLAN_START, date);
-  if (d < 0) return null;
-  return Math.floor(d / 7) + 1;
+// Week of a plan for a date (1-based). Null before the plan starts and after it ends,
+// so check-ins and the "WK 02/08" label stop when the plan does.
+export function planWeek(plan = DEFAULT_PLAN, date = localDate()) {
+  const p = plan || DEFAULT_PLAN;
+  const d = dayDiff(p.from || PLAN_START, date);
+  if (!(d >= 0)) return null;
+  if (p.to && date > p.to) return null;
+  const wk = Math.floor(d / 7) + 1;
+  return p.weeks ? Math.min(wk, p.weeks) : wk;
 }
+// Check-ins are stored per plan week. The built-in plan keeps its original 'W3' keys.
+export const checkinKey = (plan, wk) => (!plan || plan.source === 'default' ? 'W' + wk : `${plan.id || plan.from}:W${wk}`);
+export const checkinWeek = (key) => (/W(\d+)$/.exec(key) || [])[1] || '';

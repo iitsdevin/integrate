@@ -18,6 +18,8 @@ export const Icon = {
     </svg>
   ),
   plus: () => <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square"><path d="M12 4 V20 M4 12 H20" /></svg>,
+  search: () => <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5 L21 21" /></svg>,
+  stop: () => <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" fill="currentColor" /></svg>,
 };
 
 // 108 beads. Beads lit since the last render arrive with a small settle.
@@ -62,20 +64,38 @@ export function TabBar({ tab, onTab }) {
   );
 }
 
-let toastSetter = null;
-export function toast(text) { toastSetter?.(text); }
+// Toasts. toast('Saved') or toast('Sit removed', { action: 'Undo', onAction: fn }).
+// A toast raised before the Toaster is on screen (e.g. as the sit screen closes) waits for it.
+let toastSetter = null, pending = null;
+export function toast(text, opts = {}) {
+  const t = { text, ...opts, k: Date.now() + Math.random() };
+  if (toastSetter) toastSetter(t); else pending = t;
+}
 export function Toaster() {
   const [msg, setMsg] = useState(null);
+  const [leaving, setLeaving] = useState(false);
   useEffect(() => {
-    toastSetter = (t) => setMsg({ t, k: Date.now() });
+    toastSetter = (t) => { setLeaving(false); setMsg(t); };
+    if (pending) { toastSetter(pending); pending = null; }
     return () => { toastSetter = null; };
   }, []);
   useEffect(() => {
-    if (!msg) return;
-    const id = setTimeout(() => setMsg(null), 3200);
-    return () => clearTimeout(id);
+    if (!msg) return undefined;
+    const out = setTimeout(() => setLeaving(true), msg.ms || (msg.action ? 6000 : 3200));
+    return () => clearTimeout(out);
   }, [msg]);
-  return msg ? <div key={msg.k} className="toast" role="status">{msg.t}</div> : null;
+  useEffect(() => {
+    if (!leaving) return undefined;
+    const id = setTimeout(() => { setMsg(null); setLeaving(false); }, 220);
+    return () => clearTimeout(id);
+  }, [leaving]);
+  if (!msg) return null;
+  return (
+    <div key={msg.k} className="toast" data-leaving={leaving || undefined} role="status">
+      <span>{msg.text}</span>
+      {msg.action && <button type="button" onClick={() => { msg.onAction?.(); setLeaving(true); }}>{msg.action}</button>}
+    </div>
+  );
 }
 
 // Paragraphs, steps and notes for a practice.
