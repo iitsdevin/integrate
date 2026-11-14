@@ -4,6 +4,10 @@ export const SCHEMES = [
   { id: 'apricot', name: 'Apricot', note: 'from the flower mood board', light: ['#F4ECE2', '#1F1611', '#B4471F', '#F5C3A3', '#A9C3D9'], dark: ['#2A1A12', '#F4E3D3', '#F5A27A', '#A83A12', '#A9C3D9'] },
   { id: 'moss', name: 'Moss', note: 'forest and mustard', light: ['#ECEDE3', '#141812', '#2E5A3C', '#C6D9C2', '#E8C547'], dark: ['#1C3324', '#E6ECDD', '#BFD9B8', '#1B6E42', '#E8C547'] },
   { id: 'cobalt', name: 'Cobalt', note: 'stage blue and pink', light: ['#ECECF3', '#11121B', '#2A37D8', '#C7CBFF', '#F3B6C8'], dark: ['#0E1030', '#E7E8F6', '#A9B1FF', '#2F3FE0', '#F3B6C8'] },
+  { id: 'plum', name: 'Plum', note: 'plum and marigold', light: ['#F2EAEE', '#1E1219', '#7B1F5D', '#E9C1DB', '#F2B43A'], dark: ['#251421', '#F3E4ED', '#EDA9D5', '#8C2069', '#F2B43A'] },
+  { id: 'tide', name: 'Tide', note: 'sea teal and coral', light: ['#E8EFEC', '#0F1A1A', '#0C6566', '#B4DDD5', '#FF9478'], dark: ['#0C2627', '#E2EFEC', '#8FD8CE', '#0F7576', '#FF9C82'] },
+  { id: 'slate', name: 'Slate', note: 'stone grey and signal yellow', light: ['#ECEDEE', '#121416', '#35424F', '#CCD3DA', '#FFD23F'], dark: ['#14171A', '#E6E9EC', '#BCC7D2', '#3E4B58', '#FFD23F'] },
+  { id: 'signal', name: 'Signal', note: 'magenta and cyan', light: ['#F3F2EF', '#0D0C0E', '#C2125F', '#FFC4DE', '#86E3F0'], dark: ['#0E0D10', '#F2F1EE', '#FF8ABF', '#B0115A', '#86E3F0'] },
 ];
 
 const media = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
