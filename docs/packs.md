@@ -77,3 +77,15 @@ Every item has `t` and (except `note`, `head`, `prefix`, `show`) a `k` key that 
 | `circles` | `label`, `from` (a `list` key), `rings: [inner, middle, outer]`, `cap` |
 | `spoonday` | `label` |
 | `pins` | `label`, `image` (`"body"` or a `data:image/...` URL), `h` (viewBox height, width is 300), `tags`, `hint`, `cap` |
+
+## Making one
+
+The `build-pack` skill (`.claude/skills/build-pack/SKILL.md`) is the recipe: give Claude Code a book or document
+you own and ask it to build a pack. Two scripts do the mechanical parts:
+
+```
+npm run pack:text -- books/my-book.pdf packs/my-book/book.txt     # PDF, EPUB, .txt or .md to text with page markers
+npm run pack:check -- packs/my-book/my-book.integrate-pack.json   # every rule above, with the lesson and item at fault
+```
+
+`books/` and `packs/` are ignored by git.

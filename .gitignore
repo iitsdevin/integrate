@@ -2,6 +2,7 @@ node_modules
 dist
 .DS_Store
 
-# private packs never go in the repo
+# private packs and the books they are made from never go in the repo
+books/
 *.integrate-pack.json
 packs/
