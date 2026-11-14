@@ -52,11 +52,16 @@ export default function Sit({ active: initial, bell, voice = false, onEnd }) {
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => hush, []); // stop speaking when the sit screen closes
+
   // Spoken cues: each phase is read aloud a moment after its bell.
   useEffect(() => {
     if (!voice) return undefined;
-    speak(cueFor(active.phases[active.idx]), 2600);
-    return hush;
+    // The opening cue was already spoken by the Begin tap; from here each phase
+    // is read a moment after its bell.
+    const justBegun = active.idx === 0 && !active.rough && Date.now() - active.start < 4000;
+    if (!justBegun) speak(cueFor(active.phases[active.idx]), 2600);
+    return undefined;
   }, [voice, active.idx, active.rough]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const el = (now - active.start) / 1000;

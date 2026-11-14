@@ -4,7 +4,7 @@ import { toast } from '../components/bits.jsx';
 import { useStore, updateSettings, getApiKey, setApiKey, DEFAULT_SETTINGS, lastSaveFailed, sitLengths, SIT_LIMITS } from '../lib/store.js';
 import { SCHEMES, resolveDark } from '../lib/theme.js';
 import { SOUNDS, unlockAudio, ring, preloadBells } from '../lib/bells.js';
-import { voiceSupported, speak, hush } from '../lib/voice.js';
+import { voiceSupported, speakNow, hush } from '../lib/voice.js';
 import { shareOrDownload, importText, daysSinceBackup } from '../lib/backup.js';
 import { storageEstimate, askPersist } from '../lib/library.js';
 import { usePacks, importPackText, removePack } from '../lib/packs.js';
@@ -95,10 +95,12 @@ export default function Settings({ open, onClose }) {
             <label className="check">
               <input type="checkbox" checked={!!settings.voice} onChange={(e) => {
                 updateSettings({ voice: e.target.checked });
-                if (e.target.checked) speak('Connect. Feel your feet and spread your toes.'); else hush();
+                if (e.target.checked) speakNow('Connect. Feel your feet and spread your toes.'); else hush();
               }} />
               <span>Read each phase aloud after its bell, so you can keep your eyes closed. Uses this phone’s own voice; nothing is sent anywhere.</span>
             </label>
+            <button type="button" className="btn" onClick={() => speakNow('This is how the cues will sound. Connect. Feel your feet and spread your toes.')}>Test the voice</button>
+            <p className="mono soft">No sound? On an iPhone the voice follows the silent switch and the volume buttons, unlike the bells. Flip the switch off silent and try again.</p>
           </section>
         )}
 

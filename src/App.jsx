@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import { useStore, getState, addSit, addEntry, useSaveFailed, flush } from './lib/store.js';
 import { applyTheme, onSystemThemeChange } from './lib/theme.js';
 import { ring, unlockAudio, preloadBells } from './lib/bells.js';
-import { unlockVoice } from './lib/voice.js';
+import { speakNow, cueFor } from './lib/voice.js';
 import { bodyOption } from './data/daily.js';
 import { TabBar, Toaster, toast } from './components/bits.jsx';
 import Today from './screens/Today.jsx';
@@ -95,7 +95,9 @@ export default function App() {
 
   function begin(plan) {
     unlockAudio();
-    if (getState().settings.voice) unlockVoice();
+    // The first cue is spoken from this tap: phones only allow speech that a tap started,
+    // and once it has, the later cues (which come from the timer) are allowed too.
+    if (getState().settings.voice) speakNow(cueFor(plan.phases[0]));
     const t = getState().today;
     const a = {
       kind: plan.kind, label: plan.label, day: plan.day || 0,
