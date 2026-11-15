@@ -6,6 +6,8 @@
     <title>Integrate</title>
     <meta name="description" content="A daily sit: connect, dive, integrate. With a toolkit, a journal and a reflection buddy." />
     <meta name="color-scheme" content="light dark" />
+    <!-- Follow the phone's own text-size setting where the browser supports it. Sizes are in rem. -->
+    <meta name="text-scale" content="scale" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F3EFE4" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15140E" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -23,6 +25,7 @@
           var dark = s.mode === 'dark' || (s.mode !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
           document.documentElement.dataset.scheme = s.scheme || 'paper';
           document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
         } catch (e) { document.documentElement.dataset.scheme = 'paper'; }
       })();
     </script>

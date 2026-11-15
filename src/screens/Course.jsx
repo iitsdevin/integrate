@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { COURSE, MODULES, ALL_LESSONS, NEEDS } from '../data/course.js';
 import { useStore, addEntry, shortDate } from '../lib/store.js';
-import { Icon, Spark, toast, PageBar } from '../components/bits.jsx';
+import { Icon, Spark, toast, PageBar, onTabKeys, useTitle } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 import { useBackLayer } from '../lib/history.js';
 import { courseState, setCourse, Worksheet, Check, Hexaflex, CardSort, Bullseye, DefuseLab, StepDown, Player } from '../components/CourseTools.jsx';
@@ -24,6 +24,7 @@ export default function Course({ onBack }) {
   const next = ALL_LESSONS.find((l) => !done[l.id]);
   const lesson = open && ALL_LESSONS.find((l) => l.id === open);
   const module = mod && MODULES.find((m) => m.id === mod);
+  useTitle(module ? `${module.name} · ACT for ADHD` : 'ACT for ADHD');
   const practices = ALL_LESSONS.filter((l) => l.kind === 'exercise' || l.tool === 'defuse');
 
   useEffect(() => { window.scrollTo(0, 0); }, [mod]);
@@ -116,9 +117,9 @@ export default function Course({ onBack }) {
         )}
       </section>
 
-      <div className="seg" role="tablist" aria-label="Course">
-        <button type="button" role="tab" aria-selected={tab === 'modules'} onClick={() => setTab('modules')}>Modules · {MODULES.length}</button>
-        <button type="button" role="tab" aria-selected={tab === 'practices'} onClick={() => setTab('practices')}>Practices · {practices.length}</button>
+      <div className="seg" role="tablist" onKeyDown={onTabKeys} aria-label="Course">
+        <button type="button" role="tab" aria-selected={tab === 'modules'} tabIndex={tab === 'modules' ? 0 : -1} onClick={() => setTab('modules')}>Modules · {MODULES.length}</button>
+        <button type="button" role="tab" aria-selected={tab === 'practices'} tabIndex={tab === 'practices' ? 0 : -1} onClick={() => setTab('practices')}>Practices · {practices.length}</button>
       </div>
 
       {tab === 'modules' && (

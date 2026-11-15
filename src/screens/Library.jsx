@@ -4,10 +4,11 @@ import { askLibrary, BuddyError } from '../lib/buddy.js';
 import { getApiKey } from '../lib/store.js';
 import { usePacks } from '../lib/packs.js';
 import Markdown from '../components/Markdown.jsx';
-import { Icon, toast, PageBar } from '../components/bits.jsx';
+import { Icon, toast, PageBar, useTitle } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 
 export default function Library({ onBack, focusBook, onSettings }) {
+  useTitle('Your library');
   const [books, setBooks] = useState(null);
   const [busy, setBusy] = useState(null); // { name, progress }
   const [err, setErr] = useState('');
@@ -77,7 +78,7 @@ export default function Library({ onBack, focusBook, onSettings }) {
         <label className="sr" htmlFor="askQ">Your question</label>
         <textarea id="askQ" ref={qRef} className="field" style={{ minHeight: 80, background: 'var(--ground)', color: 'var(--ink)' }} value={q}
           onChange={(e) => setQ(e.target.value)} placeholder={books?.length ? 'e.g. What does she mean by labelling thoughts?' : 'Add a book first'} disabled={!books?.length} enterKeyHint="send"
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } }} />
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) { /* not while an IME is composing */ e.preventDefault(); ask(); } }} />
         <button type="submit" className="btn btn-lime btn-block" disabled={!q.trim() || asking || !books?.length}>{asking ? 'Reading…' : 'Ask'}</button>
       </form>
 

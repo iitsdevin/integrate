@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useStore, setToday, updateSettings, localDate, timeOf, addSit, removeSit, sitLengths } from '../lib/store.js';
 import { BODY_OPTIONS, bodyOption, dailySit, badDay, secondSit, FEELS, FEEL_TEXT, WHEN_TO_PAUSE, DEFAULT_PLAN, NEEDS_NOW } from '../data/daily.js';
 import { planWeek, backupDue, daysSinceBackup, shareOrDownload, snoozeBackup } from '../lib/backup.js';
-import { Mala, Spark, Icon, toast } from '../components/bits.jsx';
+import { Mala, Spark, Icon, toast, useTitle } from '../components/bits.jsx';
 import { useAutoBackup, reconnectBackupFile } from '../lib/autobackup.js';
 import Sheet from '../components/Sheet.jsx';
 import PracticeSheet from '../components/PracticeSheet.jsx';
@@ -13,6 +13,7 @@ const two = (n) => String(n).padStart(2, '0');
 
 export default function Today({ onBegin, onSettings, onBuddy }) {
   const s = useStore();
+  useTitle('Today');
   const today = localDate();
   const t = s.today?.date === today ? s.today : {};
   const feel = t.feel || null;

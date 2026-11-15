@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { WORKBOOK, MODULES, ALL_LESSONS, NEEDS, HELP } from '../data/workbook.js';
 import { useStore, addEntry, shortDate } from '../lib/store.js';
-import { Icon, Spark, toast, PageBar } from '../components/bits.jsx';
+import { Icon, Spark, toast, PageBar, onTabKeys, useTitle } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 import { useBackLayer } from '../lib/history.js';
 import { Player } from '../components/CourseTools.jsx';
@@ -35,6 +35,7 @@ export default function Workbook({ onBack, book = BUILTIN }) {
   const next = LESSONS.find((l) => !done[l.id]);
   const lesson = open && LESSONS.find((l) => l.id === open);
   const module = mod && MODS.find((m) => m.id === mod);
+  useTitle(module ? `${module.name} · ${book.title}` : book.title);
   const practices = LESSONS.filter((l) => l.steps);
 
   useEffect(() => { window.scrollTo(0, 0); }, [mod]);
@@ -132,9 +133,9 @@ export default function Workbook({ onBack, book = BUILTIN }) {
       )}
 
       {practices.length > 0 && (
-        <div className="seg" role="tablist" aria-label={book.title}>
-          <button type="button" role="tab" aria-selected={tab === 'modules'} onClick={() => setTab('modules')}>Modules · {MODS.length}</button>
-          <button type="button" role="tab" aria-selected={tab === 'practices'} onClick={() => setTab('practices')}>Practices · {practices.length}</button>
+        <div className="seg" role="tablist" onKeyDown={onTabKeys} aria-label={book.title}>
+          <button type="button" role="tab" aria-selected={tab === 'modules'} tabIndex={tab === 'modules' ? 0 : -1} onClick={() => setTab('modules')}>Modules · {MODS.length}</button>
+          <button type="button" role="tab" aria-selected={tab === 'practices'} tabIndex={tab === 'practices' ? 0 : -1} onClick={() => setTab('practices')}>Practices · {practices.length}</button>
         </div>
       )}
 

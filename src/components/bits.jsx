@@ -52,6 +52,24 @@ export function Mala({ count, full = false }) {
   );
 }
 
+// Name the current view in the page title: it is what a screen reader announces after
+// navigating and what the browser's history lists.
+export function useTitle(name) {
+  useEffect(() => { document.title = name ? `${name} · Integrate` : 'Integrate'; }, [name]);
+}
+
+// Arrow keys move between tabs, Home and End jump to the ends. Put on the tablist.
+export function onTabKeys(e) {
+  const dir = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+  if (!dir && e.key !== 'Home' && e.key !== 'End') return;
+  const tabs = [...e.currentTarget.querySelectorAll('[role="tab"]')];
+  const i = tabs.indexOf(document.activeElement);
+  if (i < 0) return;
+  e.preventDefault();
+  const next = e.key === 'Home' ? tabs[0] : e.key === 'End' ? tabs[tabs.length - 1] : tabs[(i + dir + tabs.length) % tabs.length];
+  next.focus(); next.click();
+}
+
 // A slim bar that appears once a long page has scrolled past its heading, so the page
 // name and the way back are always within reach.
 export function PageBar({ title, onBack }) {
@@ -102,6 +120,11 @@ export function TabBar({ tab, onTab }) {
 
 // Toasts. toast('Saved') or toast('Sit removed', { action: 'Undo', onAction: fn }).
 // A toast raised before the Toaster is on screen (e.g. as the sit screen closes) waits for it.
+//
+// The toast is a manual popover, so it sits in the top layer above an open sheet. It
+// lives in one named region so screen-reader users can always find it, is announced
+// when it appears, has its own Close button, and waits while it is hovered or focused
+// so there is time to reach Undo.
 let toastSetter = null, pending = null;
 export function toast(text, opts = {}) {
   const t = { text, ...opts, k: Date.now() + Math.random() };
@@ -110,26 +133,46 @@ export function toast(text, opts = {}) {
 export function Toaster() {
   const [msg, setMsg] = useState(null);
   const [leaving, setLeaving] = useState(false);
+  const [held, setHeld] = useState(false);
+  const box = useRef(null);
   useEffect(() => {
-    toastSetter = (t) => { setLeaving(false); setMsg(t); };
+    toastSetter = (t) => { setLeaving(false); setHeld(false); setMsg(t); };
     if (pending) { toastSetter(pending); pending = null; }
     return () => { toastSetter = null; };
   }, []);
-  useEffect(() => {
-    if (!msg) return undefined;
-    const out = setTimeout(() => setLeaving(true), msg.ms || (msg.action ? 6000 : 3200));
-    return () => clearTimeout(out);
+  // Show it in the top layer (re-shown for each message so it stacks above a sheet
+  // opened since), and announce it. Only the words are announced, not the controls.
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!msg || !el) return undefined;
+    try { if (el.matches(':popover-open')) el.hidePopover(); el.showPopover(); } catch { /* no popover support: it is still a fixed element */ }
+    const said = msg.text + (msg.action ? '. Actions available.' : '');
+    try { document.ariaNotify?.(said); } catch { /* the live region below covers it */ }
+    return () => { try { if (el.matches(':popover-open')) el.hidePopover(); } catch { /* ignore */ } };
   }, [msg]);
+  useEffect(() => {
+    if (!msg || held) return undefined;
+    const out = setTimeout(() => setLeaving(true), msg.ms || (msg.action ? 7000 : 3200));
+    return () => clearTimeout(out);
+  }, [msg, held]);
   useEffect(() => {
     if (!leaving) return undefined;
     const id = setTimeout(() => { setMsg(null); setLeaving(false); }, 220);
     return () => clearTimeout(id);
   }, [leaving]);
-  if (!msg) return null;
+  const notify = typeof document !== 'undefined' && typeof document.ariaNotify === 'function';
   return (
-    <div key={msg.k} className="toast" data-leaving={leaving || undefined} role="status">
-      <span>{msg.text}</span>
-      {msg.action && <button type="button" onClick={() => { msg.onAction?.(); setLeaving(true); }}>{msg.action}</button>}
+    <div role="region" aria-label="Notifications">
+      {msg && (
+        <div key={msg.k} ref={box} popover="manual" className="toast" data-leaving={leaving || undefined}
+          onPointerEnter={() => setHeld(true)} onPointerLeave={() => setHeld(false)} onFocus={() => setHeld(true)} onBlur={() => setHeld(false)}>
+          <span role={notify ? undefined : 'status'}>{msg.text}</span>
+          {msg.action && <button type="button" onClick={() => { msg.onAction?.(); setLeaving(true); }}>{msg.action}</button>}
+          <button type="button" className="toast-x" aria-label="Close notification" onClick={() => setLeaving(true)}>
+            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square"><path d="M5 5 L19 19 M19 5 L5 19" /></svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

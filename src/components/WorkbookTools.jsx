@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { getState, setState, addEntry } from '../lib/store.js';
 import { FREQ } from '../data/workbook.js';
-import { toast } from './bits.jsx';
+import { toast, onTabKeys } from './bits.jsx';
 import { RadialMap, SenseMap, WindowMap, FeelWheel, Circles, SpoonDay, PinMap } from './WorkbookMaps.jsx';
 
 export const wbState = (s = getState()) => ({ done: {}, ans: {}, practiced: {}, ...(s.wb || {}) });
@@ -346,8 +346,8 @@ function Prefix({ b, src }) {
     <section className="card card-lav stack" aria-live="polite">
       <p className="mono-s caps">{title}</p>
       {lines.map((t, i) => <p key={i} style={{ fontWeight: 700, lineHeight: 1.35, overflowWrap: 'anywhere' }}>{pre}{low(t)}.</p>)}
-      <div className="seg" role="tablist" style={{ gridTemplateColumns: `repeat(${b.steps.length}, minmax(0, 1fr))` }}>
-        {b.steps.map((s, i) => <button key={i} type="button" role="tab" aria-selected={step === i} onClick={() => setStep(i)}>Step {i + 1}</button>)}
+      <div className="seg" role="tablist" onKeyDown={onTabKeys} style={{ gridTemplateColumns: `repeat(${b.steps.length}, minmax(0, 1fr))` }}>
+        {b.steps.map((s, i) => <button key={i} type="button" role="tab" aria-selected={step === i} tabIndex={step === i ? 0 : -1} onClick={() => setStep(i)}>Step {i + 1}</button>)}
       </div>
     </section>
   );

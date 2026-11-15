@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ring, audioUnlocked, unlockAudio } from '../lib/bells.js';
 import { setThemeColor } from '../lib/theme.js';
-import { Spark, Mala } from '../components/bits.jsx';
+import { Spark, Mala, useTitle } from '../components/bits.jsx';
 import { useStore } from '../lib/store.js';
 import { speak, hush, cueFor } from '../lib/voice.js';
 import { startAmbient, stopAmbient, ambientPlaying, setNowPlaying } from '../lib/ambient.js';
@@ -18,6 +18,7 @@ const pad = (n) => String(n).padStart(2, '0');
 
 export default function Sit({ active: initial, bell, voice = false, ambient = 'off', onEnd }) {
   const [active, setActive] = useState(initial);
+  useTitle('Sit in progress');
   const [now, setNow] = useState(Date.now());
   const [wake, setWake] = useState({ ok: true, text: '' });
   const [stopArmed, setStopArmed] = useState(false);
@@ -205,6 +206,7 @@ function Pacer({ start, now }) {
 // bead landing on the mala, then, a moment later, the place to write. A tap skips the wait.
 export function Done({ result, onSave }) {
   const count = useStore((s) => s.sits.length);
+  useTitle('Sit logged');
   const [note, setNote] = useState('');
   const [dedication, setDedication] = useState('');
   const [after, setAfter] = useState(null); // how they feel after the sit

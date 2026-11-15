@@ -1,6 +1,7 @@
 // Interactive diagrams for the workbook: tap or drag to map where you sit.
 // Drawn for this app in the Field Print style, with theme tokens so they follow scheme and dark mode.
 // Each one has plain controls underneath too, so it works with VoiceOver and without precise taps.
+import { onTabKeys } from './bits.jsx';
 import { useRef, useState } from 'react';
 import { localDate } from '../lib/store.js';
 
@@ -207,8 +208,8 @@ export function FeelWheel({ b, v, set }) {
         </svg>
         <figcaption>{b.cap || 'Tap a slice to open that family of feelings, then pick the words that fit.'}</figcaption>
       </div>
-      <div className="seg wb-seg-sm" role="tablist" aria-label="Feeling families" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
-        {G.map((g, i) => <button key={g[0]} type="button" role="tab" aria-selected={i === act} onClick={() => setAct(i)}>{short[i]}{count(i) ? ` ${count(i)}` : ''}</button>)}
+      <div className="seg wb-seg-sm" role="tablist" onKeyDown={onTabKeys} aria-label="Feeling families" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
+        {G.map((g, i) => <button key={g[0]} type="button" role="tab" aria-selected={i === act} tabIndex={i === act ? 0 : -1} onClick={() => setAct(i)}>{short[i]}{count(i) ? ` ${count(i)}` : ''}</button>)}
       </div>
       <div className="stack" style={{ gap: 6 }} role="tabpanel" aria-label={gname}>
         <p className="mono caps">{gname}</p>

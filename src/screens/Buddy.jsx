@@ -101,7 +101,7 @@ export default function Buddy({ open, onClose, starter, onSettings }) {
           <label className="sr" htmlFor="buddyIn">Message your buddy</label>
           <textarea id="buddyIn" ref={taRef} rows={1} value={input} placeholder="Say what's here…" enterKeyHint="send"
             onChange={(e) => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(140, e.target.scrollHeight) + 'px'; }}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)) { e.preventDefault(); send(input); } }} />
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229 && !('ontouchstart' in window)) { e.preventDefault(); send(input); } }} />
           {busy
             ? <button type="button" className="btn btn-lime icon-btn" style={{ width: 48, height: 48 }} onClick={() => abort.current?.abort()} aria-label="Stop the reply"><Icon.stop /></button>
             : <button type="submit" className="btn btn-lime icon-btn" style={{ width: 48, height: 48 }} disabled={!input.trim()} aria-label="Send"><Icon.arrow /></button>}

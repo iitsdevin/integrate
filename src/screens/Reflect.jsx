@@ -4,13 +4,14 @@ import { DEFAULT_PLAN } from '../data/daily.js';
 import { planWeek, checkinKey, checkinWeek } from '../lib/backup.js';
 import Patterns from '../components/Patterns.jsx';
 import { observe } from '../lib/notice.js';
-import { Spark, Icon, toast } from '../components/bits.jsx';
+import { Spark, Icon, toast, useTitle } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 
 const OPENERS = ['what came up in the sit', "a pattern i'm noticing", 'plan my next weeks'];
 
 export default function Reflect({ onBuddy }) {
   const s = useStore();
+  useTitle('Reflect');
   const [writing, setWriting] = useState(false);
   const [draft, setDraft] = useState('');
   const [editing, setEditing] = useState(null);

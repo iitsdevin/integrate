@@ -92,6 +92,20 @@ export default function App() {
     return () => cancelAnimationFrame(id);
   }, [route]);
 
+  // After moving to another page, put focus on it, so a keyboard or screen-reader user
+  // starts at the top of the new view rather than on a control that is gone.
+  const firstRoute = useRef(true);
+  useEffect(() => {
+    if (firstRoute.current) { firstRoute.current = false; return undefined; }
+    const id = requestAnimationFrame(() => {
+      const main = document.querySelector('main.screen');
+      if (!main || main.contains(document.activeElement)) return;
+      main.tabIndex = -1;
+      main.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [route]);
+
   const go = useCallback((tab, view = null) => {
     const h = '#' + tab + (view ? '/' + view : '');
     if (location.hash !== h) location.hash = h;

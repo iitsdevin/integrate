@@ -4,7 +4,7 @@ import { useStore, setCheck, localDate } from '../lib/store.js';
 import { kriyaSit } from '../data/daily.js';
 import PracticeSheet from '../components/PracticeSheet.jsx';
 import { listBooks, onLibraryChange } from '../lib/library.js';
-import { Spark, Icon, PracticeBody, PageBar } from '../components/bits.jsx';
+import { Spark, Icon, PracticeBody, PageBar, onTabKeys, useTitle } from '../components/bits.jsx';
 import Sheet from '../components/Sheet.jsx';
 import Course from './Course.jsx';
 import { COURSE } from '../data/course.js';
@@ -70,6 +70,7 @@ function useSearch(q, packs) {
 }
 
 function Grid({ onView, onBegin }) {
+  useTitle('Toolkit');
   const packs = usePacks();
   const [q, setQ] = useState('');
   const [practice, setPractice] = useState(null);
@@ -87,7 +88,12 @@ function Grid({ onView, onBegin }) {
     const tall = (col === 0 ? i % 2 === 0 : i % 2 === 1);
     return (
       <button key={c.id} type="button" className={`tile ${c.tile}${tall ? ' tall' : ''}`}
-        onClick={(e) => { const b = e.currentTarget.querySelector('b'); if (b) b.style.viewTransitionName = 'cat-title'; lastCat = c.id; morph(() => onView(c.id)); }}>
+        onClick={(e) => {
+          // Exactly one tile may carry the name, or the browser skips the transition.
+          document.querySelectorAll('.tiles .tile b').forEach((x) => { x.style.viewTransitionName = ''; });
+          const b = e.currentTarget.querySelector('b'); if (b) b.style.viewTransitionName = 'cat-title';
+          lastCat = c.id; morph(() => onView(c.id));
+        }}>
         <span className="mono-s caps">{c.no}{c.tag ? ' — ' + c.tag : ''}</span>
         <span><b style={lastCat === c.id ? { viewTransitionName: 'cat-title' } : undefined}>{c.name}</b><span className="h mono-s">{c.hint}</span></span>
       </button>
@@ -169,6 +175,7 @@ function Grid({ onView, onBegin }) {
 }
 
 function Category({ cat, onBack, onBegin, onAskBook }) {
+  useTitle(cat.name);
   const checks = useStore((s) => s.checks);
   const sits = useStore((s) => s.sits);
   const [tab, setTab] = useState('practices');
@@ -193,9 +200,9 @@ function Category({ cat, onBack, onBegin, onAskBook }) {
       </header>
 
       {cat.readings.length > 0 && (
-        <div className="seg" role="tablist" aria-label={cat.name}>
-          <button type="button" role="tab" aria-selected={tab === 'practices'} onClick={() => setTab('practices')}>Practices · {count}</button>
-          <button type="button" role="tab" aria-selected={tab === 'readings'} onClick={() => setTab('readings')}>Readings · {cat.readings.length}</button>
+        <div className="seg" role="tablist" onKeyDown={onTabKeys} aria-label={cat.name}>
+          <button type="button" role="tab" aria-selected={tab === 'practices'} tabIndex={tab === 'practices' ? 0 : -1} onClick={() => setTab('practices')}>Practices · {count}</button>
+          <button type="button" role="tab" aria-selected={tab === 'readings'} tabIndex={tab === 'readings' ? 0 : -1} onClick={() => setTab('readings')}>Readings · {cat.readings.length}</button>
         </div>
       )}
 

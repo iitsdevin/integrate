@@ -2,7 +2,16 @@ import { useEffect, useLayoutEffect, useRef, useState, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { useBackLayer } from '../lib/history.js';
 
-// A bottom sheet you can drag down to dismiss, by its top bar or by its body when
+// A bottom sheet, built on the browser's own <dialog> opened as a modal. The browser
+// supplies what a hand-made overlay has to imitate: the page behind is made inert (not
+// reachable by keyboard, pointer or screen reader), focus stays inside and returns to
+// where it was, the sheet sits in the top layer above everything, and Escape (and, where
+// supported, the phone's back gesture) asks it to close.
+//
+// The <dialog> itself is a transparent, full-screen layer. Inside it are our own scrim
+// and panel, so the drag, the release curve and the open/close transitions are ours.
+//
+// You can drag the panel down to dismiss, by its top bar or by its body when
 // the body is scrolled to the top. Open/close use a CSS transition, which retargets
 // from wherever the sheet is, so a release mid-drag carries on from the finger's
 // position — and at the finger's speed: the release curve starts at the gesture's
@@ -13,7 +22,9 @@ const rubberband = (over, dim, c = 0.55) => (over * dim * c) / (dim + c * Math.a
 export default function Sheet({ open, onClose, title, kicker, children, footer, tall = false, label }) {
   const [mounted, setMounted] = useState(open);
   const [shown, setShown] = useState(false);
-  const panel = useRef(null), scrim = useRef(null), drag = useRef(null), lastFocus = useRef(null);
+  const layer = useRef(null), panel = useRef(null), scrim = useRef(null), drag = useRef(null);
+  const openRef = useRef(open), closeRef = useRef(onClose);
+  openRef.current = open; closeRef.current = onClose;
   const titleId = useId();
 
   useEffect(() => { if (open) setMounted(true); else setShown(false); }, [open]);
@@ -21,9 +32,22 @@ export default function Sheet({ open, onClose, title, kicker, children, footer, 
   // The phone's Back button closes the sheet.
   useBackLayer(open, onClose);
 
+  // Open as a modal as soon as the element exists. Closing is requested, never abrupt:
+  // Escape or a back gesture fires `cancel`, which we turn into our animated close.
+  useLayoutEffect(() => {
+    const d = layer.current;
+    if (!mounted || !d) return undefined;
+    if (!d.open) { try { d.showModal(); } catch { /* already open, or not attached yet */ } }
+    const onCancel = (e) => { e.preventDefault(); closeRef.current(); };
+    // If the browser closes it anyway (a second Escape can), keep our state in step.
+    const onNativeClose = () => { if (openRef.current) closeRef.current(); setShown(false); setMounted(false); };
+    d.addEventListener('cancel', onCancel);
+    d.addEventListener('close', onNativeClose);
+    return () => { d.removeEventListener('cancel', onCancel); d.removeEventListener('close', onNativeClose); };
+  }, [mounted]);
+
   useLayoutEffect(() => {
     if (!mounted || !open) return;
-    lastFocus.current = document.activeElement;
     if (panel.current) panel.current.style.transition = ''; // drop any release curve from a previous drag
     if (scrim.current) scrim.current.style.transition = '';
     const id = requestAnimationFrame(() => requestAnimationFrame(() => setShown(true)));
@@ -34,23 +58,13 @@ export default function Sheet({ open, onClose, title, kicker, children, footer, 
   useEffect(() => {
     if (shown || !mounted || open) return;
     const el = panel.current;
-    const done = () => { setMounted(false); lastFocus.current?.focus?.({ preventScroll: true }); };
+    // close() hands focus back to whatever opened the sheet; the browser does that itself.
+    const done = () => { const d = layer.current; if (d?.open) { openRef.current = false; d.close(); } setMounted(false); };
     const t = setTimeout(done, 380);
     const onEnd = (e) => { if (e.target === el) { clearTimeout(t); done(); } };
     el?.addEventListener('transitionend', onEnd);
     return () => { clearTimeout(t); el?.removeEventListener('transitionend', onEnd); };
   }, [shown, mounted, open]);
-
-  useEffect(() => {
-    if (!mounted) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, [mounted]);
-
-  useEffect(() => {
-    if (shown) panel.current?.focus({ preventScroll: true });
-  }, [shown]);
 
   // Depth: while a sheet is up, the page behind steps back a little, scaling about
   // the middle of what is on screen. It returns as the sheet leaves.
@@ -61,24 +75,6 @@ export default function Sheet({ open, onClose, title, kicker, children, footer, 
     behind += 1; root.dataset.sheet = String(behind);
     return () => { behind -= 1; if (behind <= 0) { behind = 0; delete root.dataset.sheet; } else root.dataset.sheet = String(behind); };
   }, [shown]);
-
-  // Escape still closes when focus has fallen out of the sheet (e.g. the focused button was removed).
-  useEffect(() => {
-    if (!shown) return;
-    const onKey = (e) => { if (e.key === 'Escape' && !panel.current?.contains(document.activeElement)) onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [shown, onClose]);
-
-  const onKeyDown = (e) => {
-    if (e.key === 'Escape') { e.stopPropagation(); onClose(); return; }
-    if (e.key !== 'Tab') return;
-    const f = panel.current.querySelectorAll('button:not([disabled]), a[href], input, textarea, select, [tabindex]:not([tabindex="-1"])');
-    if (!f.length) return;
-    const first = f[0], last = f[f.length - 1];
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-  };
 
   // ---- drag ----
   const dragStart = (y, t) => {
@@ -155,6 +151,9 @@ export default function Sheet({ open, onClose, title, kicker, children, footer, 
       cand = { id: t.identifier, y: t.clientY, x: t.clientX, on: false };
     };
     const move = (e) => {
+      // A sheet shorter than its space has nothing to scroll, and Safari would pass the
+      // gesture on to the page behind. Hold it here (form controls keep their own gestures).
+      if (!cand && !drag.current && el.scrollHeight <= el.clientHeight && e.cancelable && !e.target.closest('input, textarea, select, [data-nodrag]')) { e.preventDefault(); return; }
       if (!cand) return;
       const t = find(e, cand.id);
       if (!t) return;
@@ -185,15 +184,26 @@ export default function Sheet({ open, onClose, title, kicker, children, footer, 
     };
   }, [mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The scrim has nothing to scroll either: a finger moving on it, or a wheel turned
+  // over it or over a sheet with nothing left to scroll, must not move the page.
+  useEffect(() => {
+    const el = scrim.current, d = layer.current;
+    if (!mounted || !el || !d) return undefined;
+    const hold = (e) => { if (e.cancelable) e.preventDefault(); };
+    const wheel = (e) => {
+      const box = e.target.closest?.('.sheet-body, textarea, select');
+      if (!box || box.scrollHeight <= box.clientHeight) hold(e);
+    };
+    el.addEventListener('touchmove', hold, { passive: false });
+    d.addEventListener('wheel', wheel, { passive: false });
+    return () => { el.removeEventListener('touchmove', hold); d.removeEventListener('wheel', wheel); };
+  }, [mounted]);
+
   if (!mounted) return null;
   return createPortal(
-    <>
+    <dialog ref={layer} className="sheet-layer" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : label}>
       <div ref={scrim} className="scrim" data-open={shown} onClick={onClose} aria-hidden="true" />
-      <div
-        ref={panel} className={'sheet' + (tall ? ' tall' : '')} data-open={shown}
-        role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : label}
-        tabIndex={-1} onKeyDown={onKeyDown}
-      >
+      <div ref={panel} className={'sheet' + (tall ? ' tall' : '')} data-open={shown}>
         <div className="sheet-grab" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
           <div className="between">
             <div style={{ minWidth: 0 }}>
@@ -208,7 +218,7 @@ export default function Sheet({ open, onClose, title, kicker, children, footer, 
         <div ref={body} className="sheet-body">{children}</div>
         {footer && <div className="sheet-foot">{footer}</div>}
       </div>
-    </>,
+    </dialog>,
     document.body,
   );
 }

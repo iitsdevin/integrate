@@ -57,7 +57,8 @@ html {
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
   background: var(--ground);
-  color-scheme: light;
+  /* Follow the system by default; the app's Light/Dark setting overrides this inline. */
+  color-scheme: light dark;
 }
 body {
   margin: 0; min-height: 100dvh; background: var(--ground); color: var(--ink);
@@ -103,6 +104,7 @@ h1, h2, h3 { margin: 0; font-weight: 800; }
   padding: calc(env(safe-area-inset-top, 0px) + 30px) var(--gutter-r) calc(var(--tabbar) + 32px) var(--gutter);
   display: flex; flex-direction: column; gap: 20px;
 }
+.screen:focus { outline: none; } /* focused by the app after navigating, not by the reader */
 .row { display: flex; align-items: center; gap: 10px; }
 .between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .stack { display: flex; flex-direction: column; gap: 10px; }
@@ -210,7 +212,8 @@ h1, h2, h3 { margin: 0; font-weight: 800; }
 
 .seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 2px solid var(--ink); }
 .seg button { min-height: 44px; font-family: var(--mono); font-weight: 500; font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; transition: background-color 140ms ease; }
-.seg button[aria-selected='true'] { background: var(--ink); color: var(--ground); }
+/* Selected is shown by a bar as well as the fill, so it never depends on colour alone. */
+.seg button[aria-selected='true'] { background: var(--ink); color: var(--ground); box-shadow: inset 0 -5px 0 var(--block2); }
 
 .card { padding: 14px; border: 2px solid var(--ink); background: var(--raised); }
 .card-lav { background: var(--block1); box-shadow: 4px 4px 0 var(--ink); }
@@ -268,6 +271,18 @@ textarea.field { min-height: 140px; resize: vertical; }
 .tab-mark { position: absolute; left: 0; top: calc((var(--tabbar) - env(safe-area-inset-bottom, 0px)) / 2 - 15px); height: 30px; background: var(--block2); pointer-events: none; transition: transform 320ms var(--ease-drawer), width 320ms var(--ease-drawer); }
 
 /* ---------- sheet ---------- */
+/* The <dialog> is a clear, full-screen layer in the top layer; the scrim and panel inside
+   it are what you see. Scoped to :modal so the closed state keeps the browser's display. */
+dialog.sheet-layer { color: inherit; }
+dialog.sheet-layer:modal {
+  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none;
+  margin: 0; padding: 0; border: 0; background: transparent;
+  /* The page behind does not scroll: this layer is a scroll container with nothing to
+     scroll, and gestures reaching it stop here rather than chaining to the document. */
+  overflow: hidden; overscroll-behavior: contain;
+}
+dialog.sheet-layer::backdrop { background: transparent; overflow: hidden; overscroll-behavior: contain; }
+dialog.sheet-layer:focus { outline: none; }
 .scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); opacity: 0; transition: opacity 260ms var(--ease-out); }
 .scrim[data-open='true'] { opacity: 1; transition-duration: 380ms; }
 .sheet {
@@ -326,14 +341,17 @@ textarea.field { min-height: 140px; resize: vertical; }
 
 .toast {
   position: fixed; left: 50%; bottom: calc(var(--tabbar) + 14px); z-index: 70; transform: translateX(-50%);
+  /* It is a popover (top layer): undo the browser's centred, bordered default. */
+  inset: auto auto calc(var(--tabbar) + 14px) 50%; margin: 0; border: 0; overflow: visible; width: max-content;
   display: flex; align-items: center; gap: 14px;
-  max-width: calc(100vw - 40px); padding: 10px 14px; background: var(--ink); color: var(--ground); font-family: var(--mono); font-size: 0.75rem;
+  max-width: calc(100vw - 40px); padding: 10px 6px 10px 14px; background: var(--ink); color: var(--ground); font-family: var(--mono); font-size: 0.75rem;
   transition: opacity 240ms var(--ease-out), transform 240ms var(--ease-out);
   @starting-style { opacity: 0; transform: translate(-50%, 12px); }
 }
 /* Leaves the way it came, a little quicker. */
 .toast[data-leaving] { opacity: 0; transform: translate(-50%, 12px); transition-duration: 200ms; transition-timing-function: ease-in; }
-.toast button { min-height: 44px; margin: -10px -6px -10px 0; padding: 0 8px; color: var(--block2); font: inherit; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; text-decoration: underline; text-underline-offset: 3px; }
+.toast .toast-x { display: grid; place-items: center; width: 36px; min-height: 44px; margin: -10px 0; padding: 0; color: inherit; text-decoration: none; opacity: 0.8; }
+.toast button { min-height: 44px; margin: -10px 0 -10px 0; padding: 0 8px; color: var(--block2); font: inherit; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; text-decoration: underline; text-underline-offset: 3px; }
 [data-scheme][data-theme='dark'] .toast button { color: var(--block1); }
 
 /* ---------- breathing pacer ---------- */
@@ -523,5 +541,7 @@ select.field { width: 100%; min-height: 48px; padding: 0 12px; border: 2px solid
 .seg.wb-seg-sm button { min-height: 40px; padding: 4px 4px; font-size: 0.6875rem; line-height: 1.2; text-transform: none; letter-spacing: 0.01em; white-space: normal; overflow-wrap: anywhere; }
 .wb-details summary { cursor: pointer; padding: 6px 0; list-style: none; }
 .wb-details summary::-webkit-details-marker { display: none; }
-.wb-details summary::before { content: '+ '; }
-.wb-details[open] summary::before { content: '− '; }
+/* The markers are decoration: the empty alternative text keeps screen readers from
+   reading "plus". The plain declaration first is for browsers without that syntax. */
+.wb-details summary::before { content: '+ '; content: '+ ' / ''; }
+.wb-details[open] summary::before { content: '− '; content: '− ' / ''; }
