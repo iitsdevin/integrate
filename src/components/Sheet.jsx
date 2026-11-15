@@ -151,15 +151,16 @@ export default function Sheet({ open, onClose, title, kicker, children, footer, 
       cand = { id: t.identifier, y: t.clientY, x: t.clientX, on: false };
     };
     const move = (e) => {
-      // A sheet shorter than its space has nothing to scroll, and Safari would pass the
-      // gesture on to the page behind. Hold it here (form controls keep their own gestures).
-      if (!cand && !drag.current && el.scrollHeight <= el.clientHeight && e.cancelable && !e.target.closest('input, textarea, select, [data-nodrag]')) { e.preventDefault(); return; }
       if (!cand) return;
       const t = find(e, cand.id);
       if (!t) return;
       if (!cand.on) {
         const dy = t.clientY - cand.y, dx = t.clientX - cand.x;
         if (dy < -6 || Math.abs(dx) > Math.abs(dy) + 4 || el.scrollTop > 0) { cand = null; return; } // scrolling, not dragging
+        // A downward pull from the top has nothing to scroll. Claim it from the first
+        // movement: once a browser starts scrolling for a gesture it cannot be stopped,
+        // and what it would scroll is the page behind.
+        if (dy > 0 && e.cancelable) e.preventDefault();
         if (dy < 10) return; // hysteresis before committing
         cand.on = true;
         dragStart(t.clientY, e.timeStamp);
@@ -184,19 +185,54 @@ export default function Sheet({ open, onClose, title, kicker, children, footer, 
     };
   }, [mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // The scrim has nothing to scroll either: a finger moving on it, or a wheel turned
-  // over it or over a sheet with nothing left to scroll, must not move the page.
+  // Nothing behind the sheet may scroll. The browser's own containment covers areas
+  // that can scroll; Safari does not yet contain areas that cannot, so a touch or wheel
+  // there would move the page behind. This guard holds every movement that has nowhere
+  // to go inside the sheet, from the first one (a scroll that has started cannot be
+  // stopped). Form controls keep their own gestures.
   useEffect(() => {
-    const el = scrim.current, d = layer.current;
-    if (!mounted || !el || !d) return undefined;
+    const d = layer.current;
+    if (!mounted || !d) return undefined;
+    const starts = new Map(); // touch id -> starting y
     const hold = (e) => { if (e.cancelable) e.preventDefault(); };
-    const wheel = (e) => {
-      const box = e.target.closest?.('.sheet-body, textarea, select');
-      if (!box || box.scrollHeight <= box.clientHeight) hold(e);
+    // The scrollable area a movement would act on, or null if there is none.
+    const scroller = (target) => {
+      if (target.closest?.('input[type="range"], select')) return 'control';
+      const fits = (el) => !el || el.scrollHeight <= el.clientHeight + 1;
+      const ta = target.closest?.('textarea');
+      if (!fits(ta)) return ta; // a long note scrolls inside its own box
+      const body = target.closest?.('.sheet-body');
+      return fits(body) ? null : body;
     };
-    el.addEventListener('touchmove', hold, { passive: false });
+    const touchstart = (e) => { for (const t of e.changedTouches) starts.set(t.identifier, t.clientY); };
+    const touchend = (e) => { for (const t of e.changedTouches) starts.delete(t.identifier); };
+    const touchmove = (e) => {
+      if (e.touches.length > 1) return; // leave pinch-zoom alone
+      const box = scroller(e.target);
+      if (box === 'control') return;
+      if (!box) { hold(e); return; }
+      const t = e.changedTouches[0], y0 = starts.get(t.identifier);
+      if (y0 === undefined) return;
+      const down = t.clientY > y0; // finger moving down = content scrolling up
+      const atTop = box.scrollTop <= 0, atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 1;
+      if ((down && atTop) || (!down && atEnd)) hold(e); // already at that edge: nowhere to go
+    };
+    const wheel = (e) => {
+      const box = scroller(e.target);
+      if (box === 'control') return;
+      if (!box) { hold(e); return; }
+      const atTop = box.scrollTop <= 0, atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 1;
+      if ((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atEnd)) hold(e);
+    };
+    d.addEventListener('touchstart', touchstart, { passive: true });
+    d.addEventListener('touchmove', touchmove, { passive: false });
+    d.addEventListener('touchend', touchend); d.addEventListener('touchcancel', touchend);
     d.addEventListener('wheel', wheel, { passive: false });
-    return () => { el.removeEventListener('touchmove', hold); d.removeEventListener('wheel', wheel); };
+    return () => {
+      d.removeEventListener('touchstart', touchstart); d.removeEventListener('touchmove', touchmove);
+      d.removeEventListener('touchend', touchend); d.removeEventListener('touchcancel', touchend);
+      d.removeEventListener('wheel', wheel);
+    };
   }, [mounted]);
 
   if (!mounted) return null;

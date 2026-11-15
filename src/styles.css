@@ -389,7 +389,6 @@ html[data-sheet] .screen { transform: scale(0.965); transition-duration: 440ms; 
 ::view-transition-group(cat-title) { animation-duration: 340ms; animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1); }
 ::view-transition-old(cat-title), ::view-transition-new(cat-title) { height: 100%; width: auto; object-fit: contain; object-position: left center; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 240ms; }
-html[data-vt] .app[data-nav] .screen { animation: none; } /* the morph replaces the slide */
 
 /* ---------- after a sit ---------- */
 .done { animation: nav-fade 900ms ease backwards; }
@@ -410,6 +409,8 @@ html[data-vt] .app[data-nav] .screen { animation: none; } /* the morph replaces 
 .app[data-nav='tab'] .screen { animation: nav-fade 200ms var(--ease-out) backwards; }
 .app[data-nav='push'] .screen { animation: nav-push 280ms var(--ease-drawer) backwards; }
 .app[data-nav='pop'] .screen { animation: nav-pop 280ms var(--ease-drawer) backwards; }
+/* The brief 'Opening…' placeholder does not animate; the page that replaces it does, once. */
+.app[data-nav] .screen.loading { animation: none; }
 @keyframes nav-fade { from { opacity: 0; } }
 @keyframes nav-push { from { opacity: 0; transform: translateX(22px); } }
 @keyframes nav-pop { from { opacity: 0; transform: translateX(-22px); } }
@@ -483,7 +484,7 @@ select.field { width: 100%; min-height: 48px; padding: 0 12px; border: 2px solid
   html[data-sheet] .screen { transform: none; }
   .phase-in { animation-duration: 200ms; }
   /* Pages cross-fade instead of sliding. */
-  .app[data-nav] .screen { animation: nav-fade 160ms ease backwards; }
+  .app[data-nav='tab'] .screen, .app[data-nav='push'] .screen, .app[data-nav='pop'] .screen { animation: nav-fade 160ms ease backwards; }
 }
 @keyframes bead-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-transparency: reduce) {

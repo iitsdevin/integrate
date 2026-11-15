@@ -32,7 +32,7 @@ function parseHash() {
 export default function App() {
   const settings = useStore((s) => s.settings);
   const [route, setRoute] = useState(parseHash);
-  const [nav, setNav] = useState('tab'); // how we arrived: 'tab' | 'push' | 'pop'
+  const [nav, setNav] = useState('tab'); // how we arrived: 'tab' | 'push' | 'pop', or 'morph-…' via a tile
   const routeRef = useRef(route);
   const saveFailed = useSaveFailed();
   const [active, setActive] = useState(() => {
@@ -67,7 +67,10 @@ export default function App() {
     const on = () => {
       const next = parseHash(), prev = routeRef.current;
       const deeper = (next.view ? 1 : 0) - (prev.view ? 1 : 0);
-      setNav(next.tab !== prev.tab ? 'tab' : deeper > 0 ? 'push' : deeper < 0 ? 'pop' : 'tab');
+      const kind = next.tab !== prev.tab ? 'tab' : deeper > 0 ? 'push' : deeper < 0 ? 'pop' : 'tab';
+      // A page that arrives by the tile morph has no entrance animation of its own. This is
+      // decided once, here: switching an animation off and on again later would replay it.
+      setNav(document.documentElement.dataset.vt ? 'morph-' + kind : kind);
       routeRef.current = next;
       setRoute(next);
     };
@@ -82,7 +85,7 @@ export default function App() {
   // page's own effects have run.
   const wanted = useRef(0);
   useLayoutEffect(() => {
-    wanted.current = nav === 'pop' ? scrollPos.get(location.hash || '#today') || 0 : 0;
+    wanted.current = nav.endsWith('pop') ? scrollPos.get(location.hash || '#today') || 0 : 0;
   }, [route, nav]);
   useEffect(() => {
     const y = wanted.current;
@@ -159,7 +162,7 @@ export default function App() {
         </button>
       )}
       {route.tab === 'today' && <Today onBegin={begin} onSettings={() => setSettingsOpen(true)} onBuddy={openBuddy} />}
-      <Suspense fallback={<main className="screen" aria-busy="true"><p className="mono caps mute">Opening…</p></main>}>
+      <Suspense fallback={<main className="screen loading" aria-busy="true"><p className="mono caps mute">Opening…</p></main>}>
         {route.tab === 'toolkit' && route.view === 'library' && (
           <Library onBack={() => go('toolkit')} focusBook={askBook} onSettings={() => setSettingsOpen(true, 'buddy')} />
         )}
