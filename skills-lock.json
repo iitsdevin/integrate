@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": "skills/.experimental/apple-design/SKILL.md",
       "computedHash": "03044bfcacecbea9fad3299815a7c0d215808f5d24df1eda022bf0a1c0b881b9"
+    },
+    "modern-web-guidance": {
+      "source": "GoogleChrome/modern-web-guidance",
+      "sourceType": "github",
+      "skillPath": "skills/modern-web-guidance/SKILL.md",
+      "computedHash": "9e69ce00dc314b64f6664031b70295ea46c7de93ac682c624808df6e48e08b66"
     }
   }
 }
